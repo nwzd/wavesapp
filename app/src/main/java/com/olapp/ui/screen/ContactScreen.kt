@@ -51,7 +51,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // Replace with your Formspree form ID — sign up free at formspree.io
-private const val FORMSPREE_ID = "YOUR_FORMSPREE_ID"
+private const val FORMSPREE_ID = "xpqkeayb"
 private const val FORMSPREE_URL = "https://formspree.io/f/$FORMSPREE_ID"
 
 private val topics = listOf(
