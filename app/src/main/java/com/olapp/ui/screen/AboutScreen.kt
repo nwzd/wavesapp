@@ -189,9 +189,9 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 )
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(
-                    emoji = "🔄",
-                    title = "Rotating anonymous identity",
-                    body = "Your Bluetooth token — the signal your phone emits — changes every 15 minutes. This means you cannot be tracked or identified by someone scanning for Waves signals over time."
+                    emoji = "🔑",
+                    title = "Stable device identity, no account",
+                    body = "Your Waves ID is generated once when you first set up the app and never changes. It exists only on your device — there is no account, no login, and no server that maps your ID to your real identity."
                 )
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(

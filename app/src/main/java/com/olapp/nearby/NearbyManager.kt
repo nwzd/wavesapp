@@ -41,14 +41,15 @@ private const val TAG = "NearbyManager"
 private const val SERVICE_ID = "com.olapp.nearby"
 
 // Message types
-private const val MSG_MINI       = "m"   // name/token/desc/contact — tiny, sent first
-private const val MSG_THUMB      = "t"   // low-res thumbnail — sent immediately after identity
-private const val MSG_PHOTO      = "h"   // standard photo — sent ~300 ms after thumbnail
-private const val MSG_PHOTO_HD   = "H"   // HD photo — sent only on explicit request
-private const val MSG_PHOTO_REQ  = "r"   // request peer to send their HD photo
-private const val MSG_PROFILE    = "P"   // legacy full profile (handle if received)
-private const val MSG_OLA        = "O"
-private const val MSG_MATCH_LOC  = "L"   // match location share — sent after match is created
+private const val MSG_MINI          = "m"   // name/token/desc/contact — tiny, sent first
+private const val MSG_THUMB         = "t"   // low-res thumbnail — sent immediately after identity
+private const val MSG_PHOTO         = "h"   // standard photo — sent ~300 ms after thumbnail
+private const val MSG_PHOTO_HD      = "H"   // HD photo — sent only on explicit request
+private const val MSG_PHOTO_REQ     = "r"   // request peer to send their HD photo
+private const val MSG_PROFILE       = "P"   // legacy full profile (handle if received)
+private const val MSG_OLA           = "O"
+private const val MSG_MATCH_LOC     = "L"   // match location share — sent after match is created
+private const val MSG_MATCH_CONFIRM = "MC"  // sent by whoever detects mutual match; other side creates their match
 
 // Thumbnail: very small, arrives in <100 ms — keeps discovery instant
 private const val THUMB_MAX_PX       = 40
@@ -57,13 +58,20 @@ private const val THUMB_JPEG_QUALITY = 20
 private const val PHOTO_MAX_PX       = 128
 private const val PHOTO_JPEG_QUALITY = 70
 private const val PHOTO_DELAY_MS     = 100L
-// Refresh BLE scan periodically to catch newly arrived peers — 60 s balances discovery speed vs battery
-private const val SCAN_REFRESH_MS    = 60_000L
+// Refresh BLE scan periodically to catch newly arrived peers
+private const val SCAN_REFRESH_MS    = 12_000L
 // HD photo: only sent on demand when the other user zooms in
 private const val PHOTO_HD_MAX_PX       = 400
 private const val PHOTO_HD_JPEG_QUALITY = 85
 
 data class PendingPeer(val bleToken: String, val displayName: String)
+
+data class MatchConfirmData(
+    val token: String,
+    val displayName: String,
+    val contactInfo: String,
+    val photoPath: String?
+)
 
 data class NearbyPeer(
     val endpointId: String,
@@ -89,6 +97,7 @@ class NearbyManager @Inject constructor(
 
     val olaReceived = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 8)
     val locationReceived = MutableSharedFlow<Triple<String, Double, Double>>(extraBufferCapacity = 8)
+    val matchConfirmReceived = MutableSharedFlow<MatchConfirmData>(extraBufferCapacity = 8)
 
     @Volatile var myToken: String = ""
     @Volatile var myDisplayName: String = ""
@@ -124,6 +133,7 @@ class NearbyManager @Inject constructor(
     fun stop() {
         scanRefreshJob?.cancel()
         scanRefreshJob = null
+        _peers.value.keys.forEach { runCatching { client.disconnectFromEndpoint(it) } }
         runCatching { client.stopAllEndpoints() }
         runCatching { client.stopAdvertising() }
         runCatching { client.stopDiscovery() }
@@ -136,16 +146,11 @@ class NearbyManager @Inject constructor(
         scanRefreshJob = scope.launch {
             while (true) {
                 delay(SCAN_REFRESH_MS)
-                // Restart discovery to force a fresh BLE scan window — does not drop connections
+                // Only restart discovery — stopping advertising would fire onEndpointLost
+                // on peers, causing visible flicker in their Nearby list.
                 runCatching { client.stopDiscovery() }
                 delay(150)
                 doStartDiscovery()
-                // Also refresh advertising so we appear fresh to scanners
-                currentProfile?.let { p ->
-                    runCatching { client.stopAdvertising() }
-                    delay(150)
-                    doStartAdvertising(p)
-                }
             }
         }
     }
@@ -170,6 +175,17 @@ class NearbyManager @Inject constructor(
             put("tok", myToken)
             put("lat", lat)
             put("lon", lon)
+        }
+        send(endpointId, msg.toString())
+    }
+
+    fun sendMatchConfirmation(endpointId: String) {
+        val profile = currentProfile ?: return
+        val msg = JSONObject().apply {
+            put("t", MSG_MATCH_CONFIRM)
+            put("tok", myToken)
+            put("n", myDisplayName)
+            put("c", profile.contactInfo)
         }
         send(endpointId, msg.toString())
     }
@@ -295,6 +311,7 @@ class NearbyManager @Inject constructor(
                     MSG_PHOTO_REQ         -> cachedHdJson?.let { send(endpointId, it) }
                     MSG_OLA               -> handleOla(json)
                     MSG_MATCH_LOC         -> handleMatchLocation(json)
+                    MSG_MATCH_CONFIRM     -> handleMatchConfirm(endpointId, json)
                     else                  -> Unit
                 }
             }.onFailure { Log.e(TAG, "Payload parse error from $endpointId", it) }
@@ -348,6 +365,15 @@ class NearbyManager @Inject constructor(
         }
         Log.d(TAG, "Wave from $tok ($name)")
         olaReceived.tryEmit(tok to name)
+    }
+
+    private fun handleMatchConfirm(endpointId: String, json: JSONObject) {
+        val tok     = json.optString("tok").ifEmpty { return }
+        val name    = json.optString("n")
+        val contact = json.optString("c")
+        val photo   = _peers.value[endpointId]?.photoPath
+        Log.d(TAG, "Match confirmation from $tok ($name)")
+        matchConfirmReceived.tryEmit(MatchConfirmData(tok, name, contact, photo))
     }
 
     private fun handleMatchLocation(json: JSONObject) {

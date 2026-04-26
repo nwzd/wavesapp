@@ -196,8 +196,7 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Avatar with animated sparkle dot
-                val t = rememberInfiniteTransition(label = "dot_${match.id}")
-                val dotScale by t.animateFloat(
+                val dotScale by rememberInfiniteTransition(label = "dot").animateFloat(
                     0.8f, 1.2f,
                     infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
                     label = "dot"

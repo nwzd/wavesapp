@@ -243,15 +243,16 @@ private fun HowItWorksHint(onDismiss: () -> Unit) {
 
 @Composable
 private fun RadarEmptyState(discoveryEnabled: Boolean) {
-    val t = rememberInfiniteTransition(label = "radar")
-    val s1 by t.animateFloat(0.65f, 1.35f, infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s1")
-    val s2 by t.animateFloat(0.65f, 1.35f, infiniteRepeatable(tween(2200, 550, FastOutSlowInEasing), RepeatMode.Restart), label = "s2")
-    val s3 by t.animateFloat(0.65f, 1.35f, infiniteRepeatable(tween(2200, 1100, FastOutSlowInEasing), RepeatMode.Restart), label = "s3")
-
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(220.dp).scale(s3).clip(CircleShape).background(Brand.copy(alpha = 0.04f)))
-        Box(Modifier.size(148.dp).scale(s2).clip(CircleShape).background(Brand.copy(alpha = 0.07f)))
-        Box(Modifier.size(88.dp).scale(s1).clip(CircleShape).background(Brand.copy(alpha = 0.12f)))
+        if (discoveryEnabled) {
+            val t = rememberInfiniteTransition(label = "radar")
+            val s1 by t.animateFloat(0.65f, 1.35f, infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "s1")
+            val s2 by t.animateFloat(0.65f, 1.35f, infiniteRepeatable(tween(2200, 550, FastOutSlowInEasing), RepeatMode.Restart), label = "s2")
+            val s3 by t.animateFloat(0.65f, 1.35f, infiniteRepeatable(tween(2200, 1100, FastOutSlowInEasing), RepeatMode.Restart), label = "s3")
+            Box(Modifier.size(220.dp).scale(s3).clip(CircleShape).background(Brand.copy(alpha = 0.04f)))
+            Box(Modifier.size(148.dp).scale(s2).clip(CircleShape).background(Brand.copy(alpha = 0.07f)))
+            Box(Modifier.size(88.dp).scale(s1).clip(CircleShape).background(Brand.copy(alpha = 0.12f)))
+        }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -260,10 +261,15 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(60.dp).clip(CircleShape)
-                    .background(Brush.linearGradient(LogoGradient))
+                modifier = Modifier.size(60.dp).clip(CircleShape).background(
+                    if (discoveryEnabled) Brush.linearGradient(LogoGradient)
+                    else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
+                )
             ) {
-                Icon(Icons.Default.WifiTethering, null, Modifier.size(28.dp), Color.White)
+                Icon(
+                    Icons.Default.WifiTethering, null, Modifier.size(28.dp),
+                    if (discoveryEnabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Spacer(Modifier.height(2.dp))
             Text(
@@ -274,7 +280,7 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
             )
             Text(
                 if (discoveryEnabled)
-                    "Scanning nearby… this can take a minute or two. Keep the app open and stay patient — people appear as they're found. Same WiFi is instant; Bluetooth reaches further."
+                    "Scanning nearby… people appear as they're found. Same WiFi is instant; Bluetooth reaches further."
                 else
                     "Turn on discovery to see people around you.",
                 style = MaterialTheme.typography.bodySmall,

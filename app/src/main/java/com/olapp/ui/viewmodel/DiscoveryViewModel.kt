@@ -92,7 +92,7 @@ class DiscoveryViewModel @Inject constructor(
                     )
                 }
 
-                devices.values.filter { it.status != WaveStatus.MATCHED }.toList()
+                devices.values.filter { it.status == WaveStatus.NONE }.toList()
             }.collect { _nearbyDevices.value = it }
         }
     }
@@ -128,13 +128,14 @@ class DiscoveryViewModel @Inject constructor(
                     otherBleToken = bleToken,
                     otherDisplayName = resolvedName,
                     otherPhotoUrl = resolvedPhoto,
-                    otherContactInfo = received.senderContactInfo.ifEmpty { peer?.contactInfo ?: "" },
+                    otherContactInfo = peer?.contactInfo?.takeIf { it.isNotEmpty() }
+                        ?: received.senderContactInfo,
                     latitude = location?.first,
                     longitude = location?.second
                 )
-                if (location != null) {
-                    nearbyManager.endpointIdForToken(bleToken)
-                        ?.let { nearbyManager.sendMatchLocation(it, location.first, location.second) }
+                nearbyManager.endpointIdForToken(bleToken)?.let { eid ->
+                    nearbyManager.sendMatchConfirmation(eid)
+                    if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
                 }
             }
         }

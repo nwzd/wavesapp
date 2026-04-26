@@ -174,10 +174,10 @@ fun ProfileScreen(
             )
             ProfileInfoRow(
                 icon = Icons.Default.Person,
-                label = "BLE token",
+                label = "Waves ID",
                 value = profile?.bleToken?.take(8)?.let { "$it…" } ?: "—",
                 iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                note = "Rotates every 15 min for privacy"
+                note = "Your permanent device identifier"
             )
         }
 

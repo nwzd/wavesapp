@@ -187,7 +187,7 @@
         <li><span class="bullet">✦</span> We have no servers and no database. Your profile never leaves your device unless you wave at someone.</li>
         <li><span class="bullet">✦</span> When two phones connect, profiles are exchanged directly between them — no cloud relay.</li>
         <li><span class="bullet">✦</span> Your contact info (Instagram, phone, etc.) is only transmitted at the moment of a mutual wave, and only to that one person.</li>
-        <li><span class="bullet">✦</span> Your Bluetooth token rotates every 15 minutes so you cannot be tracked over time.</li>
+        <li><span class="bullet">✦</span> Your Waves ID is generated once on your device and never sent to any server.</li>
         <li><span class="bullet">✦</span> Uninstalling the app deletes everything. No "delete account" request needed.</li>
         <li><span class="bullet">✦</span> We don't run ads. We don't sell data. We make no money from your personal information.</li>
       </ul>
@@ -206,7 +206,7 @@
         <li><strong>Waves you have sent</strong> — stored only on your phone.</li>
         <li><strong>Waves you have received</strong> — stored only on your phone.</li>
         <li><strong>Mutual matches (Vibes)</strong> — stored only on your phone.</li>
-        <li><strong>Bluetooth discovery token</strong> — a random identifier broadcast locally over Bluetooth/Wi-Fi Direct. It is not linked to your identity and rotates every 15 minutes.</li>
+        <li><strong>Waves ID</strong> — a random identifier generated once when you first set up the app, stored only on your device, and broadcast locally over Bluetooth/Wi-Fi Direct. It is not linked to your real identity and never sent to any server.</li>
       </ul>
       <div class="highlight-box">
         <p>Because we have no servers, we are structurally incapable of accessing, storing, or disclosing your profile data. There is nothing to subpoena, nothing to hack, and nothing to breach.</p>
@@ -215,7 +215,7 @@
 
     <div class="policy-section">
       <h2>3. How nearby discovery works</h2>
-      <p>When you open Waves with discovery enabled, your device broadcasts a short anonymous signal using Bluetooth Low Energy and Wi-Fi peer-to-peer technology (Google Nearby Connections). This signal contains only your rotating anonymous token — not your name, photo, or any personal information.</p>
+      <p>When you open Waves with discovery enabled, your device broadcasts a short anonymous signal using Bluetooth Low Energy and Wi-Fi peer-to-peer technology (Google Nearby Connections). This signal contains only your Waves ID — not your name, photo, or any personal information.</p>
       <p>When another Waves user is detected nearby, the two devices establish a direct encrypted connection to exchange profile data. This exchange happens entirely between the two devices; no data passes through any Waves-controlled infrastructure.</p>
       <p>You can disable discovery at any time in Profile settings, which immediately stops broadcasting.</p>
     </div>

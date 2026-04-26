@@ -64,12 +64,6 @@ class UserRepository @Inject constructor(
         userProfileDao.updateDiscovery(enabled)
     }
 
-    suspend fun refreshBleToken(): String {
-        val newToken = generateBleToken()
-        userProfileDao.updateBleToken(newToken)
-        return newToken
-    }
-
     fun observeMatches(): Flow<List<Match>> =
         matchDao.observeAll().map { list -> list.map { it.toModel() } }
 

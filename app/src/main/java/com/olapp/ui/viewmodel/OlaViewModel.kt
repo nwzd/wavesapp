@@ -98,13 +98,14 @@ class OlaViewModel @Inject constructor(
                 otherBleToken = senderBleToken,
                 otherDisplayName = resolvedName,
                 otherPhotoUrl = resolvedPhoto,
-                otherContactInfo = receivedOla.senderContactInfo.ifEmpty { peer?.contactInfo ?: "" },
+                otherContactInfo = peer?.contactInfo?.takeIf { it.isNotEmpty() }
+                    ?: receivedOla.senderContactInfo,
                 latitude = location?.first,
                 longitude = location?.second
             )
-            if (location != null) {
-                nearbyManager.endpointIdForToken(senderBleToken)
-                    ?.let { nearbyManager.sendMatchLocation(it, location.first, location.second) }
+            nearbyManager.endpointIdForToken(senderBleToken)?.let { eid ->
+                nearbyManager.sendMatchConfirmation(eid)
+                if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
             }
         }
     }
