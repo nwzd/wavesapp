@@ -1,0 +1,3 @@
+-keep class com.olapp.data.model.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*

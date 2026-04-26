@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Waves</string>
+    <string name="ble_notification_channel_id">ola_ble</string>
+    <string name="ble_notification_channel_name">Waves Discovery</string>
+    <string name="ble_notification_text">Looking for people nearby…</string>
+    <string name="ola_notification_channel_id">ola_messages</string>
+    <string name="ola_notification_channel_name">Waves Messages</string>
+    <style name="Theme.OlaApp" parent="android:Theme.Material.Light.NoActionBar"/>
+</resources>

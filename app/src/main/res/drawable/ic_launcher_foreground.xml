@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        One bold S-curve wave in the adaptive icon safe zone (x 18–90, y 18–90).
+        Centre at (54, 54). Amplitude 27 = 25 % of icon width — bold and clear.
+        M 18,54 C 27,27 45,27 54,54 C 63,81 81,81 90,54
+    -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="11"
+        android:strokeLineCap="round"
+        android:pathData="M 18,54 C 27,27 45,27 54,54 C 63,81 81,81 90,54"/>
+
+</vector>
