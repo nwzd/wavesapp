@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Waves</title>
+  <meta name="description" content="Waves privacy policy. We store nothing on our servers because we have no servers." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:   #0EA5E9;
+      --violet: #A855F7;
+      --ink:    #0F172A;
+      --mid:    #475569;
+      --light:  #94A3B8;
+      --bg:     #F0F9FF;
+      --white:  #FFFFFF;
+      --grad: linear-gradient(135deg, var(--blue), var(--violet));
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--white);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 6%; height: 68px;
+      background: rgba(255,255,255,0.90);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(14,165,233,0.08);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--ink);
+    }
+    .nav-logo .logo-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .nav-logo span { font-weight: 800; font-size: 20px; }
+    nav a.back-link {
+      color: var(--mid); font-weight: 500; font-size: 14px;
+      text-decoration: none;
+      transition: color .2s;
+    }
+    nav a.back-link:hover { color: var(--blue); }
+
+    .hero {
+      padding: 120px 6% 60px;
+      text-align: center;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,.10), transparent), var(--bg);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(14,165,233,.10); color: var(--blue);
+      font-weight: 600; font-size: 13px;
+      padding: 6px 14px; border-radius: 50px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(14,165,233,.20);
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 900; letter-spacing: -1.5px; margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 17px; color: var(--mid);
+      max-width: 540px; margin: 0 auto;
+      line-height: 1.7;
+    }
+    .updated {
+      font-size: 13px; color: var(--light);
+      margin-top: 12px;
+    }
+
+    .content {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 64px 6% 100px;
+    }
+
+    .tl-dr {
+      background: var(--ink);
+      border-radius: 20px;
+      padding: 36px 40px;
+      margin-bottom: 56px;
+    }
+    .tl-dr h2 {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 18px;
+    }
+    .tl-dr ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .tl-dr li {
+      display: flex; align-items: flex-start; gap: 12px;
+      color: rgba(255,255,255,.85); font-size: 15px; line-height: 1.5;
+    }
+    .tl-dr li span.bullet {
+      color: var(--blue); font-size: 18px; flex-shrink: 0; line-height: 1.4;
+    }
+
+    .policy-section { margin-bottom: 48px; }
+    .policy-section h2 {
+      font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+      margin-bottom: 16px; color: var(--ink);
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid rgba(14,165,233,.12);
+    }
+    .policy-section p {
+      font-size: 15px; color: var(--mid); line-height: 1.8; margin-bottom: 14px;
+    }
+    .policy-section ul {
+      list-style: none; display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .policy-section ul li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 15px; color: var(--mid); line-height: 1.7;
+    }
+    .policy-section ul li::before {
+      content: '→';
+      color: var(--blue); flex-shrink: 0; font-weight: 600;
+    }
+    .policy-section a { color: var(--blue); text-decoration: none; }
+    .policy-section a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 20px 24px;
+      border-left: 3px solid var(--blue);
+      margin: 20px 0;
+    }
+    .highlight-box p { color: var(--ink); font-size: 15px; margin: 0; }
+
+    footer {
+      background: var(--ink); color: rgba(255,255,255,.55);
+      padding: 48px 6%; text-align: center; font-size: 13px;
+    }
+    footer .footer-logo {
+      display: flex; align-items: center; gap: 8px;
+      justify-content: center; margin-bottom: 20px;
+    }
+    footer .footer-logo .logo-circle {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    footer .footer-logo span { font-weight: 800; font-size: 18px; color: var(--white); }
+    footer p { margin-bottom: 6px; }
+    footer a { color: rgba(255,255,255,.55); text-decoration: none; }
+    footer a:hover { color: var(--blue); }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <div class="logo-circle">👋</div>
+      <span>Waves</span>
+    </a>
+    <a href="index.html" class="back-link">← Back to home</a>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-badge">📄 Legal</div>
+    <h1>Privacy Policy</h1>
+    <p>We built Waves so that no privacy policy would be necessary. Here's why, and what little we do need to tell you.</p>
+    <p class="updated">Last updated: April 26, 2026</p>
+  </div>
+
+  <div class="content">
+
+    <div class="tl-dr">
+      <h2>TL;DR — The short version</h2>
+      <ul>
+        <li><span class="bullet">✦</span> We have no servers and no database. Your profile never leaves your device unless you wave at someone.</li>
+        <li><span class="bullet">✦</span> When two phones connect, profiles are exchanged directly between them — no cloud relay.</li>
+        <li><span class="bullet">✦</span> Your contact info (Instagram, phone, etc.) is only transmitted at the moment of a mutual wave, and only to that one person.</li>
+        <li><span class="bullet">✦</span> Your Bluetooth token rotates every 15 minutes so you cannot be tracked over time.</li>
+        <li><span class="bullet">✦</span> Uninstalling the app deletes everything. No "delete account" request needed.</li>
+        <li><span class="bullet">✦</span> We don't run ads. We don't sell data. We make no money from your personal information.</li>
+      </ul>
+    </div>
+
+    <div class="policy-section">
+      <h2>1. Who we are</h2>
+      <p>Waves is an independent app. You can reach us via <a href="index.html#contact">our contact form</a>. For the purposes of applicable data protection law, we are the controller of any personal data processed in connection with this policy — which, as you'll read below, is very little.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>2. What data Waves processes and where it lives</h2>
+      <p>Waves is designed around a core principle: <strong>your data stays on your device</strong>. There is no Waves server, no cloud database, and no account in the traditional sense. Here is everything that exists:</p>
+      <ul>
+        <li><strong>Your profile</strong> (display name, photo, bio, contact info, discovery preference) — stored only in your phone's local app storage.</li>
+        <li><strong>Waves you have sent</strong> — stored only on your phone.</li>
+        <li><strong>Waves you have received</strong> — stored only on your phone.</li>
+        <li><strong>Mutual matches (Vibes)</strong> — stored only on your phone.</li>
+        <li><strong>Bluetooth discovery token</strong> — a random identifier broadcast locally over Bluetooth/Wi-Fi Direct. It is not linked to your identity and rotates every 15 minutes.</li>
+      </ul>
+      <div class="highlight-box">
+        <p>Because we have no servers, we are structurally incapable of accessing, storing, or disclosing your profile data. There is nothing to subpoena, nothing to hack, and nothing to breach.</p>
+      </div>
+    </div>
+
+    <div class="policy-section">
+      <h2>3. How nearby discovery works</h2>
+      <p>When you open Waves with discovery enabled, your device broadcasts a short anonymous signal using Bluetooth Low Energy and Wi-Fi peer-to-peer technology (Google Nearby Connections). This signal contains only your rotating anonymous token — not your name, photo, or any personal information.</p>
+      <p>When another Waves user is detected nearby, the two devices establish a direct encrypted connection to exchange profile data. This exchange happens entirely between the two devices; no data passes through any Waves-controlled infrastructure.</p>
+      <p>You can disable discovery at any time in Profile settings, which immediately stops broadcasting.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>4. How waving works</h2>
+      <p>When you wave at someone:</p>
+      <ul>
+        <li>A notification is sent to the other person's device via the existing peer-to-peer connection, containing only the fact that "someone nearby waved" — your identity is not included at this stage.</li>
+        <li>If the other person waves back, both devices exchange full profiles directly over the peer-to-peer link. This includes the contact details each party chose to share.</li>
+        <li>If the other person does not wave back, they never learn your identity. The wave record exists only on your own device.</li>
+      </ul>
+    </div>
+
+    <div class="policy-section">
+      <h2>5. Third-party services</h2>
+      <p>Waves uses the following third-party SDKs on the device:</p>
+      <ul>
+        <li><strong>Google Nearby Connections API</strong> — used for peer-to-peer device discovery and data transfer. Google's privacy policy applies to this SDK's use of Bluetooth and Wi-Fi hardware. We do not send any user-identifiable data to Google through this API.</li>
+        <li><strong>Coil (image loading library)</strong> — used to display profile photos stored locally on the device. No data is transmitted externally.</li>
+      </ul>
+      <p>We do not integrate any analytics SDKs, advertising SDKs, or crash-reporting services that would transmit personal data off the device.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>6. Permissions we request</h2>
+      <ul>
+        <li><strong>Bluetooth &amp; Nearby Devices</strong> — required to discover and connect to nearby phones running Waves.</li>
+        <li><strong>Wi-Fi</strong> — required for Wi-Fi Direct peer-to-peer connections via Nearby Connections.</li>
+        <li><strong>Location (approximate, while using app)</strong> — required by Android to use Bluetooth scanning. We do not record or transmit your location. We use a one-time system cache lookup only when needed for platform requirements; no continuous GPS polling occurs.</li>
+        <li><strong>Notifications</strong> — to alert you when you receive a wave or a mutual match occurs.</li>
+        <li><strong>Photos / media</strong> — only if you choose to set a profile photo from your gallery.</li>
+        <li><strong>Foreground service</strong> — to keep Bluetooth discovery running while the app is in the foreground.</li>
+      </ul>
+    </div>
+
+    <div class="policy-section">
+      <h2>7. Contact form</h2>
+      <p>If you use the in-app contact form or the contact form on this website, your message (name, email, topic, and message text) is submitted to <a href="https://formspree.io" target="_blank" rel="noopener">Formspree</a>, a third-party form service, which forwards it to our email address. Formspree's own privacy policy governs that submission. We use this data only to respond to your message and do not retain it beyond that purpose.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>8. Children</h2>
+      <p>Waves is not intended for use by anyone under the age of 18. We do not knowingly collect data from minors. Because all data is stored locally, we have no mechanism to verify or enforce age at a server level — we rely on platform (Google Play) age gates and parental controls.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>9. Your rights</h2>
+      <p>Under GDPR, UK GDPR, and similar frameworks, you have rights including access, rectification, erasure, restriction, and portability of your personal data. Because all data lives on your device, you exercise these rights directly:</p>
+      <ul>
+        <li><strong>Access &amp; portability</strong> — your data is on your phone; you have full access to it.</li>
+        <li><strong>Rectification</strong> — edit your profile at any time in the Profile tab.</li>
+        <li><strong>Erasure</strong> — uninstall the app. All data is permanently deleted with no server-side residue.</li>
+        <li><strong>Restriction / objection</strong> — disable discovery in Profile settings to stop broadcasting.</li>
+      </ul>
+      <p>For any rights request relating to data submitted via the contact form, reach us via <a href="index.html#contact">our contact form</a> and we will respond within 30 days.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>10. Data retention</h2>
+      <p>On-device data persists until you uninstall the app or use the "Start fresh" option in Profile settings (which clears waves and vibes but retains your profile). Contact form submissions received by email are retained only as long as needed to resolve your query.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>11. Security</h2>
+      <p>Peer-to-peer profile exchanges occur over encrypted connections provided by the Google Nearby Connections API. Since there is no central server, there is no central point of attack. Your device's own security (lock screen, OS encryption) protects locally stored app data.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>12. Changes to this policy</h2>
+      <p>We will update this page if our practices change and note the revision date at the top. Significant changes will be communicated via an in-app notice. Continued use of the app after a change constitutes acceptance of the updated policy.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2>13. Contact</h2>
+      <p>Questions about this policy or your data? Use <a href="index.html#contact">our contact form</a>. We read every message.</p>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-logo">
+      <div class="logo-circle">👋</div>
+      <span>Waves</span>
+    </div>
+    <p><a href="privacy.html">Privacy Policy</a></p>
+    <p style="margin-top: 16px;">© 2026 Waves. Made with care.</p>
+  </footer>
+
+</body>
+</html>

@@ -30,6 +30,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.olapp.ui.screen.AboutScreen
 import com.olapp.ui.screen.ContactScreen
 import com.olapp.ui.screen.DiscoveryScreen
 import com.olapp.ui.screen.MatchesScreen
@@ -58,6 +59,7 @@ fun MainNavigation() {
     val currentRoute = currentEntry?.destination?.route
 
     var editingProfile  by remember { mutableStateOf(false) }
+    var showingAbout    by remember { mutableStateOf(false) }
     var showingContact  by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -108,9 +110,13 @@ fun MainNavigation() {
                 when {
                     editingProfile -> SetupScreen(onSaved = { editingProfile = false })
                     showingContact -> ContactScreen(onBack = { showingContact = false })
+                    showingAbout   -> AboutScreen(
+                        onBack = { showingAbout = false },
+                        onContact = { showingContact = true }
+                    )
                     else -> ProfileScreen(
                         onEdit = { editingProfile = true },
-                        onContact = { showingContact = true }
+                        onAbout = { showingAbout = true }
                     )
                 }
             }

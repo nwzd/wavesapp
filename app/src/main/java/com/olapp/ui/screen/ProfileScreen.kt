@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Wifi
@@ -54,7 +54,7 @@ import com.olapp.ui.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     onEdit: () -> Unit,
-    onContact: () -> Unit = {},
+    onAbout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profile by viewModel.profile.collectAsState()
@@ -190,7 +190,7 @@ fun ProfileScreen(
                 .padding(horizontal = 16.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable { onContact() }
+                .clickable { onAbout() }
                 .padding(16.dp)
         ) {
             Row(
@@ -203,11 +203,11 @@ fun ProfileScreen(
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.HelpOutline, null, Modifier.size(20.dp), Brand)
+                    Icon(Icons.Default.Info, null, Modifier.size(20.dp), Brand)
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Help & Feedback", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    Text("Report a bug or send us a message", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("About Waves", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Our mission, how it works & privacy", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Icon(
                     androidx.compose.material.icons.Icons.Default.Person, // chevron placeholder
