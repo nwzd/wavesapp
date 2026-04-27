@@ -12,3 +12,4 @@ local.properties
 # Firebase — DO NOT commit these
 app/google-services.json
 functions/.env
+app/build/outputs/apk/debug/app-debug.apk

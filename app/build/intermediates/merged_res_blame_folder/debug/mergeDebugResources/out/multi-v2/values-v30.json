@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.olapp-mergeDebugResources-68:/values-v30/values-v30.xml",
+            "outputFile": "com.olapp-mergeDebugResources-70:/values-v30/values-v30.xml",
             "map": [
                 {
-                    "source": "/home/wsx/.gradle/caches/transforms-4/72dd99bc7d454f6aa19c7bc87680e281/transformed/material3-release/res/values-v30/values-v30.xml",
+                    "source": "/home/wsx/.gradle/caches/transforms-4/6b34f2b7ababa8f1d50dc16ecd32109c/transformed/material3-release/res/values-v30/values-v30.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

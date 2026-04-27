@@ -1,5 +1,6 @@
 package com.olapp.data.repository;
 
+import com.olapp.data.local.dao.BlockedUserDao;
 import com.olapp.data.local.dao.MatchDao;
 import com.olapp.data.local.dao.ReceivedOlaDao;
 import com.olapp.data.local.dao.SentOlaDao;
@@ -34,28 +35,32 @@ public final class UserRepository_Factory implements Factory<UserRepository> {
 
   private final Provider<MatchDao> matchDaoProvider;
 
+  private final Provider<BlockedUserDao> blockedUserDaoProvider;
+
   public UserRepository_Factory(Provider<UserProfileDao> userProfileDaoProvider,
       Provider<ReceivedOlaDao> receivedOlaDaoProvider, Provider<SentOlaDao> sentOlaDaoProvider,
-      Provider<MatchDao> matchDaoProvider) {
+      Provider<MatchDao> matchDaoProvider, Provider<BlockedUserDao> blockedUserDaoProvider) {
     this.userProfileDaoProvider = userProfileDaoProvider;
     this.receivedOlaDaoProvider = receivedOlaDaoProvider;
     this.sentOlaDaoProvider = sentOlaDaoProvider;
     this.matchDaoProvider = matchDaoProvider;
+    this.blockedUserDaoProvider = blockedUserDaoProvider;
   }
 
   @Override
   public UserRepository get() {
-    return newInstance(userProfileDaoProvider.get(), receivedOlaDaoProvider.get(), sentOlaDaoProvider.get(), matchDaoProvider.get());
+    return newInstance(userProfileDaoProvider.get(), receivedOlaDaoProvider.get(), sentOlaDaoProvider.get(), matchDaoProvider.get(), blockedUserDaoProvider.get());
   }
 
   public static UserRepository_Factory create(Provider<UserProfileDao> userProfileDaoProvider,
       Provider<ReceivedOlaDao> receivedOlaDaoProvider, Provider<SentOlaDao> sentOlaDaoProvider,
-      Provider<MatchDao> matchDaoProvider) {
-    return new UserRepository_Factory(userProfileDaoProvider, receivedOlaDaoProvider, sentOlaDaoProvider, matchDaoProvider);
+      Provider<MatchDao> matchDaoProvider, Provider<BlockedUserDao> blockedUserDaoProvider) {
+    return new UserRepository_Factory(userProfileDaoProvider, receivedOlaDaoProvider, sentOlaDaoProvider, matchDaoProvider, blockedUserDaoProvider);
   }
 
   public static UserRepository newInstance(UserProfileDao userProfileDao,
-      ReceivedOlaDao receivedOlaDao, SentOlaDao sentOlaDao, MatchDao matchDao) {
-    return new UserRepository(userProfileDao, receivedOlaDao, sentOlaDao, matchDao);
+      ReceivedOlaDao receivedOlaDao, SentOlaDao sentOlaDao, MatchDao matchDao,
+      BlockedUserDao blockedUserDao) {
+    return new UserRepository(userProfileDao, receivedOlaDao, sentOlaDao, matchDao, blockedUserDao);
   }
 }

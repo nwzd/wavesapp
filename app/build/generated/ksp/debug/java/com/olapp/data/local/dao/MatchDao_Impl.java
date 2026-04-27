@@ -41,6 +41,8 @@ public final class MatchDao_Impl implements MatchDao {
 
   private final SharedSQLiteStatement __preparedStmtOfUpdateLocation;
 
+  private final SharedSQLiteStatement __preparedStmtOfDeleteByBleToken;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteAll;
 
   public MatchDao_Impl(@NonNull final RoomDatabase __db) {
@@ -86,6 +88,14 @@ public final class MatchDao_Impl implements MatchDao {
       @NonNull
       public String createQuery() {
         final String _query = "UPDATE `match` SET latitude = ?, longitude = ? WHERE otherBleToken = ? AND latitude IS NULL";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteByBleToken = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM match WHERE otherBleToken = ?";
         return _query;
       }
     };
@@ -167,6 +177,32 @@ public final class MatchDao_Impl implements MatchDao {
           }
         } finally {
           __preparedStmtOfUpdateLocation.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteByBleToken(final String bleToken,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteByBleToken.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, bleToken);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteByBleToken.release(_stmt);
         }
       }
     }, $completion);

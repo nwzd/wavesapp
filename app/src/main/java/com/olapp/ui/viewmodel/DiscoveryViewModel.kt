@@ -26,6 +26,7 @@ data class NearbyDevice(
     val displayName: String,
     val description: String = "",
     val photoPath: String? = null,
+    val photoIsSelfie: Boolean = false,
     val status: WaveStatus = WaveStatus.NONE,
     val isPending: Boolean = false
 )
@@ -87,6 +88,7 @@ class DiscoveryViewModel @Inject constructor(
                         displayName = peer.displayName.ifEmpty { "Someone nearby" },
                         description = peer.description,
                         photoPath = peer.photoPath,
+                        photoIsSelfie = peer.photoIsSelfie,
                         status = status,
                         isPending = false
                     )
@@ -113,8 +115,7 @@ class DiscoveryViewModel @Inject constructor(
                 longitude = null
             )
 
-            nearbyManager.endpointIdForToken(bleToken)
-                ?.let { nearbyManager.sendOla(it) }
+            nearbyManager.queueOlaForToken(bleToken)
 
             val received = userRepository.getLatestReceivedOlaFrom(bleToken)
             if (received != null) {
@@ -133,6 +134,7 @@ class DiscoveryViewModel @Inject constructor(
                     latitude = location?.first,
                     longitude = location?.second
                 )
+                nearbyManager.clearPendingOla(bleToken)
                 nearbyManager.endpointIdForToken(bleToken)?.let { eid ->
                     nearbyManager.sendMatchConfirmation(eid)
                     if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
@@ -144,6 +146,14 @@ class DiscoveryViewModel @Inject constructor(
     fun requestHdPhoto(bleToken: String) {
         nearbyManager.endpointIdForToken(bleToken)
             ?.let { nearbyManager.requestHdPhoto(it) }
+    }
+
+    fun blockUser(bleToken: String) {
+        viewModelScope.launch {
+            val device = _nearbyDevices.value.find { it.bleToken == bleToken } ?: return@launch
+            userRepository.blockUser(bleToken, device.displayName)
+            nearbyManager.addBlockedToken(bleToken)
+        }
     }
 
     fun toggleDiscovery(enabled: Boolean) {

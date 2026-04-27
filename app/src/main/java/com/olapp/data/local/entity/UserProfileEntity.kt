@@ -13,5 +13,6 @@ data class UserProfileEntity(
     val bleToken: String,
     val discoveryEnabled: Boolean,
     val description: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val photoIsSelfie: Boolean = false
 )

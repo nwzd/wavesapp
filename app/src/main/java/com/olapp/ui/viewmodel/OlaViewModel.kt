@@ -116,6 +116,13 @@ class OlaViewModel @Inject constructor(
         }
     }
 
+    fun blockUser(token: String, displayName: String) {
+        viewModelScope.launch {
+            userRepository.blockUser(token, displayName)
+            nearbyManager.addBlockedToken(token)
+        }
+    }
+
     fun clearSnackbar() { _matchSnackbar.value = null }
 
     @SuppressLint("MissingPermission")

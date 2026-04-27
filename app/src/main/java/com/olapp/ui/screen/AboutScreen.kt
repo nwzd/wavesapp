@@ -145,7 +145,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 HowItWorksStep(
                     emoji = "✦",
                     title = "They wave back — it's a Vibe",
-                    body = "If they wave back, both of you are notified instantly. You both see each other's full profile — name, photo, bio, and the contact details you chose to share (Instagram, WhatsApp, Telegram, phone…). From that point on, the connection is yours — Waves steps out of the way."
+                    body = "If they wave back, both of you are notified instantly. You both see each other's full profile — name, photo, bio, and the contact details you chose to share (Instagram, Twitter/X, email…). From that point on, the connection is yours — Waves steps out of the way."
                 )
                 AboutDivider()
                 HowItWorksStep(
@@ -185,7 +185,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 PrivacyPill(
                     emoji = "👁️",
                     title = "Contact info is gated by mutual consent",
-                    body = "Your Instagram, WhatsApp, or phone number is never broadcast to the people around you. It is transmitted only at the moment both parties wave — and only to that one person."
+                    body = "Your Instagram, Twitter/X, or email is never broadcast to the people around you. It is transmitted only at the moment both parties wave — and only to that one person."
                 )
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(

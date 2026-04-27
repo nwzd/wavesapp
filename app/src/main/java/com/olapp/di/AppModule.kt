@@ -3,6 +3,7 @@ package com.olapp.di
 import android.content.Context
 import androidx.room.Room
 import com.olapp.data.local.OlaDatabase
+import com.olapp.data.local.dao.BlockedUserDao
 import com.olapp.data.local.dao.MatchDao
 import com.olapp.data.local.dao.ReceivedOlaDao
 import com.olapp.data.local.dao.SentOlaDao
@@ -21,7 +22,13 @@ object AppModule {
     @Provides @Singleton
     fun provideDatabase(@ApplicationContext context: Context): OlaDatabase =
         Room.databaseBuilder(context, OlaDatabase::class.java, "ola_database")
-            .addMigrations(OlaDatabase.MIGRATION_2_3, OlaDatabase.MIGRATION_3_4, OlaDatabase.MIGRATION_4_5, OlaDatabase.MIGRATION_5_6)
+            .addMigrations(
+                OlaDatabase.MIGRATION_2_3,
+                OlaDatabase.MIGRATION_3_4,
+                OlaDatabase.MIGRATION_4_5,
+                OlaDatabase.MIGRATION_5_6,
+                OlaDatabase.MIGRATION_6_7
+            )
             .fallbackToDestructiveMigration()
             .build()
 
@@ -29,4 +36,5 @@ object AppModule {
     @Provides fun provideReceivedOlaDao(db: OlaDatabase): ReceivedOlaDao = db.receivedOlaDao()
     @Provides fun provideSentOlaDao(db: OlaDatabase): SentOlaDao = db.sentOlaDao()
     @Provides fun provideMatchDao(db: OlaDatabase): MatchDao = db.matchDao()
+    @Provides fun provideBlockedUserDao(db: OlaDatabase): BlockedUserDao = db.blockedUserDao()
 }

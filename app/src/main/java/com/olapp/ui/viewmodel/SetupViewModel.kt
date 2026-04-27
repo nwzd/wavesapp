@@ -2,10 +2,13 @@ package com.olapp.ui.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.olapp.data.preferences.AppPreferences
 import com.olapp.data.repository.UserRepository
+import com.olapp.util.PhotoValidationResult
+import com.olapp.util.PhotoValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.Period
+import java.time.ZoneOffset
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,7 +40,6 @@ class SetupViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Pre-filled values when editing an existing profile
     private val _existingDisplayName = MutableStateFlow("")
     val existingDisplayName: StateFlow<String> = _existingDisplayName.asStateFlow()
 
@@ -49,9 +55,26 @@ class SetupViewModel @Inject constructor(
     private val _existingDiscoverable = MutableStateFlow(true)
     val existingDiscoverable: StateFlow<Boolean> = _existingDiscoverable.asStateFlow()
 
+    private val _validatedPhotoUri = MutableStateFlow<Uri?>(null)
+    val validatedPhotoUri: StateFlow<Uri?> = _validatedPhotoUri.asStateFlow()
+
+    private val _photoValidating = MutableStateFlow(false)
+    val photoValidating: StateFlow<Boolean> = _photoValidating.asStateFlow()
+
+    private val _photoError = MutableStateFlow<String?>(null)
+    val photoError: StateFlow<String?> = _photoError.asStateFlow()
+
+    private val _photoIsSelfie = MutableStateFlow(false)
+    val photoIsSelfie: StateFlow<Boolean> = _photoIsSelfie.asStateFlow()
+
+    private val _isFirstSetup = MutableStateFlow(false)
+    val isFirstSetup: StateFlow<Boolean> = _isFirstSetup.asStateFlow()
+
     init {
         viewModelScope.launch {
-            val profile = userRepository.getMyProfile() ?: return@launch
+            val profile = userRepository.getMyProfile()
+            _isFirstSetup.value = (profile == null)
+            if (profile == null) return@launch
             _existingDisplayName.value = profile.displayName
             _existingContactInfo.value = profile.contactInfo
             _existingDescription.value = profile.description
@@ -60,25 +83,66 @@ class SetupViewModel @Inject constructor(
         }
     }
 
+    fun createTempPhotoUri(): Uri {
+        val file = File(context.cacheDir, "selfie_temp.jpg")
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    }
+
+    fun onPhotoSelected(uri: Uri, isSelfie: Boolean = false) {
+        viewModelScope.launch {
+            _photoValidating.value = true
+            _photoError.value = null
+            val result = withContext(Dispatchers.Default) {
+                PhotoValidator.validate(context, uri)
+            }
+            when (result) {
+                is PhotoValidationResult.Valid -> {
+                    _validatedPhotoUri.value = uri
+                    _photoIsSelfie.value = isSelfie
+                }
+                is PhotoValidationResult.NoFace ->
+                    _photoError.value = "No face detected — please use a clear photo of your face."
+                is PhotoValidationResult.TooManyFaces ->
+                    _photoError.value = "Multiple faces detected — please use a solo photo."
+                is PhotoValidationResult.Inappropriate ->
+                    _photoError.value = "Photo appears inappropriate. Please use a suitable photo."
+            }
+            _photoValidating.value = false
+        }
+    }
+
     fun save(
         displayName: String,
         contactInfo: String,
         description: String,
-        photoUri: Uri?,
-        existingPhotoPath: String?,
-        discoveryEnabled: Boolean
+        discoveryEnabled: Boolean,
+        dateOfBirthMillis: Long? = null
     ) {
         if (displayName.isBlank()) { _error.value = "Name can't be empty"; return }
+        if (_isFirstSetup.value) {
+            if (dateOfBirthMillis == null) {
+                _error.value = "Please enter your date of birth."
+                return
+            }
+            val dob = Instant.ofEpochMilli(dateOfBirthMillis).atZone(ZoneOffset.UTC).toLocalDate()
+            if (Period.between(dob, LocalDate.now()).years < 18) {
+                _error.value = "You must be 18 or older to use Waves."
+                return
+            }
+        }
 
         viewModelScope.launch {
             _isSaving.value = true
             runCatching {
                 val photoPath = when {
-                    photoUri != null -> copyPhotoToInternalStorage(photoUri)
-                    existingPhotoPath != null -> existingPhotoPath
+                    _validatedPhotoUri.value != null ->
+                        copyPhotoToInternalStorage(_validatedPhotoUri.value!!)
+                    _existingPhotoPath.value != null -> _existingPhotoPath.value!!
                     else -> ""
                 }
-                userRepository.saveProfile(displayName, contactInfo, photoPath, discoveryEnabled, description)
+                val selfie = if (_validatedPhotoUri.value != null) _photoIsSelfie.value
+                             else false
+                userRepository.saveProfile(displayName, contactInfo, photoPath, discoveryEnabled, description, selfie)
             }.onSuccess {
                 appPreferences.setSetupComplete(true)
                 _saved.value = true
@@ -99,4 +163,5 @@ class SetupViewModel @Inject constructor(
     }
 
     fun clearError() { _error.value = null }
+    fun clearPhotoError() { _photoError.value = null }
 }

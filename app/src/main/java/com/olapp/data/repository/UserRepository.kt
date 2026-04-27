@@ -1,10 +1,12 @@
 package com.olapp.data.repository
 
 import android.annotation.SuppressLint
+import com.olapp.data.local.dao.BlockedUserDao
 import com.olapp.data.local.dao.MatchDao
 import com.olapp.data.local.dao.ReceivedOlaDao
 import com.olapp.data.local.dao.SentOlaDao
 import com.olapp.data.local.dao.UserProfileDao
+import com.olapp.data.local.entity.BlockedUserEntity
 import com.olapp.data.local.entity.MatchEntity
 import com.olapp.data.local.entity.ReceivedOlaEntity
 import com.olapp.data.local.entity.SentOlaEntity
@@ -15,6 +17,8 @@ import com.olapp.data.model.SentOla
 import com.olapp.data.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,8 +28,10 @@ class UserRepository @Inject constructor(
     private val userProfileDao: UserProfileDao,
     private val receivedOlaDao: ReceivedOlaDao,
     private val sentOlaDao: SentOlaDao,
-    private val matchDao: MatchDao
+    private val matchDao: MatchDao,
+    private val blockedUserDao: BlockedUserDao
 ) {
+    private val matchMutex = Mutex()
     fun observeMyProfile(): Flow<UserProfile?> =
         userProfileDao.observeMyProfile().map { it?.toModel() }
 
@@ -41,7 +47,8 @@ class UserRepository @Inject constructor(
         contactInfo: String,
         photoUrl: String,
         discoveryEnabled: Boolean,
-        description: String = ""
+        description: String = "",
+        photoIsSelfie: Boolean = false
     ): UserProfile {
         val existing = userProfileDao.getMyProfile()
         val bleToken = existing?.bleToken ?: generateBleToken()
@@ -54,7 +61,8 @@ class UserRepository @Inject constructor(
             photoUrl = photoUrl,
             bleToken = bleToken,
             discoveryEnabled = discoveryEnabled,
-            description = description
+            description = description,
+            photoIsSelfie = photoIsSelfie
         )
         userProfileDao.insert(entity)
         return entity.toModel()
@@ -74,9 +82,9 @@ class UserRepository @Inject constructor(
         otherContactInfo: String,
         latitude: Double? = null,
         longitude: Double? = null
-    ): Match? {
+    ): Match? = matchMutex.withLock {
         val existing = matchDao.getByBleToken(otherBleToken)
-        if (existing != null) return existing.toModel()
+        if (existing != null) return@withLock existing.toModel()
 
         val match = Match(
             id = UUID.randomUUID().toString(),
@@ -89,7 +97,7 @@ class UserRepository @Inject constructor(
             longitude = longitude
         )
         matchDao.insert(match.toEntity())
-        return match
+        match
     }
 
     fun observeReceivedOlas(): Flow<List<ReceivedOla>> =
@@ -190,6 +198,15 @@ class UserRepository @Inject constructor(
         sentOlaDao.deleteByBleToken(otherBleToken)
     }
 
+    suspend fun blockUser(token: String, displayName: String) {
+        blockedUserDao.insert(BlockedUserEntity(bleToken = token, displayName = displayName))
+        matchDao.deleteByBleToken(token)
+        receivedOlaDao.deleteByBleToken(token)
+        sentOlaDao.deleteByBleToken(token)
+    }
+
+    suspend fun getBlockedTokens(): Set<String> = blockedUserDao.getAllTokens().toHashSet()
+
     suspend fun clearAll() {
         matchDao.deleteAll()
         receivedOlaDao.deleteAll()
@@ -209,7 +226,8 @@ class UserRepository @Inject constructor(
         photoUrl = photoUrl,
         bleToken = bleToken,
         discoveryEnabled = discoveryEnabled,
-        description = description
+        description = description,
+        photoIsSelfie = photoIsSelfie
     )
 
     private fun ReceivedOlaEntity.toModel() = ReceivedOla(

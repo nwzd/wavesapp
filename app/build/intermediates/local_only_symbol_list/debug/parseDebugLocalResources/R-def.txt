@@ -4,6 +4,7 @@ drawable ic_instagram
 drawable ic_launcher
 drawable ic_launcher_background
 drawable ic_launcher_foreground
+drawable ic_notification
 drawable ic_telegram
 drawable ic_whatsapp
 drawable ic_x_twitter
@@ -17,3 +18,4 @@ string ble_notification_text
 string ola_notification_channel_id
 string ola_notification_channel_name
 style Theme.OlaApp
+xml file_paths

@@ -173,6 +173,10 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
                 viewModel.respondToOla(ola.senderBleToken)
                 selectedReceived = null
             },
+            onBlock = {
+                viewModel.blockUser(ola.senderBleToken, ola.senderDisplayName)
+                selectedReceived = null
+            },
             onDismiss = { selectedReceived = null }
         )
     }
@@ -183,6 +187,7 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
             timestamp = ola.timestamp,
             isReceived = false,
             onRespond = {},
+            onBlock = null,
             onDismiss = { selectedSent = null }
         )
     }
@@ -324,6 +329,7 @@ private fun WaveDetailSheet(
     timestamp: Long,
     isReceived: Boolean,
     onRespond: () -> Unit,
+    onBlock: (() -> Unit)?,
     onDismiss: () -> Unit
 ) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -402,6 +408,16 @@ private fun WaveDetailSheet(
                     colors = ButtonDefaults.buttonColors(containerColor = Brand)
                 ) {
                     Text("Wave back", style = MaterialTheme.typography.labelLarge, color = Color.White)
+                }
+                if (onBlock != null) {
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(onClick = onBlock, modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Block this person",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

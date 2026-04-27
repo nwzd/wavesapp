@@ -2,10 +2,7 @@ package com.olapp.data.model
 
 enum class ContactPlatform(val key: String, val label: String) {
     INSTAGRAM("ig", "Instagram"),
-    WHATSAPP("wa", "WhatsApp"),
-    TELEGRAM("tg", "Telegram"),
     TWITTER("tw", "Twitter / X"),
-    PHONE("ph", "Phone"),
     EMAIL("em", "Email"),
     OTHER("ot", "Other")
 }
@@ -41,19 +38,10 @@ object ContactParser {
             val handle = entry.value.trimStart('@')
             "https://instagram.com/$handle"
         }
-        ContactPlatform.WHATSAPP -> {
-            val num = entry.value.replace(Regex("[^0-9+]"), "")
-            "https://wa.me/$num"
-        }
-        ContactPlatform.TELEGRAM -> {
-            val handle = entry.value.trimStart('@')
-            "https://t.me/$handle"
-        }
         ContactPlatform.TWITTER -> {
             val handle = entry.value.trimStart('@')
             "https://x.com/$handle"
         }
-        ContactPlatform.PHONE -> "tel:${entry.value.replace(" ", "")}"
         ContactPlatform.EMAIL -> "mailto:${entry.value}"
         ContactPlatform.OTHER -> null
     }
@@ -62,11 +50,8 @@ object ContactParser {
         val lower = value.lowercase().trim()
         return when {
             lower.contains("instagram") || lower.contains("ig.me") -> ContactPlatform.INSTAGRAM
-            lower.contains("whatsapp") || lower.contains("wa.me") -> ContactPlatform.WHATSAPP
-            lower.contains("telegram") || lower.contains("t.me") -> ContactPlatform.TELEGRAM
             lower.contains("twitter") || lower.contains("x.com") -> ContactPlatform.TWITTER
             lower.contains("@") && lower.contains(".") -> ContactPlatform.EMAIL
-            lower.startsWith("+") || lower.all { it.isDigit() || it in " -()+" } -> ContactPlatform.PHONE
             lower.startsWith("@") -> ContactPlatform.INSTAGRAM
             else -> ContactPlatform.OTHER
         }

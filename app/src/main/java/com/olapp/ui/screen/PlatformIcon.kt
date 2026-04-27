@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AlternateEmail
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,27 +24,19 @@ import com.olapp.data.model.ContactPlatform
 val ContactPlatform.brandColor: Color
     get() = when (this) {
         ContactPlatform.INSTAGRAM -> Color(0xFFE1306C)
-        ContactPlatform.WHATSAPP  -> Color(0xFF25D366)
-        ContactPlatform.TELEGRAM  -> Color(0xFF0088CC)
         ContactPlatform.TWITTER   -> Color(0xFF000000)
-        ContactPlatform.PHONE     -> Color(0xFF4CAF50)
         ContactPlatform.EMAIL     -> Color(0xFF7B61FF)
         ContactPlatform.OTHER     -> Color(0xFF9E9E9E)
     }
 
-// PNG logos that already include their own background colour
 @DrawableRes
 fun ContactPlatform.logoRes(): Int? = when (this) {
     ContactPlatform.INSTAGRAM -> R.drawable.ic_instagram
-    ContactPlatform.WHATSAPP  -> R.drawable.ic_whatsapp
-    ContactPlatform.TELEGRAM  -> R.drawable.ic_telegram
     ContactPlatform.TWITTER   -> R.drawable.ic_x_twitter
     else                      -> null
 }
 
-// Material icon fallback for platforms with no brand PNG
 fun ContactPlatform.materialIcon(): ImageVector? = when (this) {
-    ContactPlatform.PHONE -> Icons.Default.Phone
     ContactPlatform.EMAIL -> Icons.Default.AlternateEmail
     else                  -> null
 }

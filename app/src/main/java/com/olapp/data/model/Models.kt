@@ -7,7 +7,8 @@ data class UserProfile(
     val photoUrl: String,
     val bleToken: String,
     val discoveryEnabled: Boolean,
-    val description: String = ""
+    val description: String = "",
+    val photoIsSelfie: Boolean = false
 )
 
 data class ReceivedOla(

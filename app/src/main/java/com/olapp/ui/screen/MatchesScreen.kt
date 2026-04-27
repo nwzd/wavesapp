@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,12 +16,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -38,7 +39,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +56,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.olapp.data.model.ContactEntry
 import com.olapp.data.model.ContactParser
-import com.olapp.data.model.ContactPlatform
 import com.olapp.data.model.Match
 import com.olapp.ui.theme.Brand
 import com.olapp.ui.theme.LogoGradient
@@ -62,7 +64,6 @@ import com.olapp.ui.viewmodel.OlaViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.abs
 
 @Composable
 fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
@@ -116,7 +117,10 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(matches, key = { it.id }) { match ->
-                    MatchCard(match = match, onDelete = { viewModel.deleteMatch(match.id, match.otherBleToken) })
+                    MatchCard(
+                        match = match,
+                        onDelete = { viewModel.deleteMatch(match.id, match.otherBleToken) }
+                    )
                 }
             }
         }
@@ -167,6 +171,7 @@ private fun VibesEmptyState() {
 private fun MatchCard(match: Match, onDelete: () -> Unit) {
     val context = LocalContext.current
     val name = match.otherDisplayName.ifEmpty { "Anonymous" }
+
     val lat = match.latitude
     val lon = match.longitude
     val contactEntries = remember(match.otherContactInfo) {
@@ -175,34 +180,27 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // Left gradient accent bar
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(if (lat != null && lon != null || contactEntries.isNotEmpty()) 90.dp else 72.dp)
-                    .background(Brush.verticalGradient(listOf(Brand, Tangerine)))
-            )
-
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header: avatar + name/time + action buttons
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 14.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Avatar with animated sparkle dot
                 val dotScale by rememberInfiniteTransition(label = "dot").animateFloat(
                     0.8f, 1.2f,
                     infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
                     label = "dot"
                 )
                 Box(contentAlignment = Alignment.BottomEnd) {
-                    ProfileAvatar(photoPath = match.otherPhotoUrl, name = name, size = 48.dp)
+                    ProfileAvatar(photoPath = match.otherPhotoUrl, name = name, size = 52.dp)
                     Box(
                         modifier = Modifier
                             .size(16.dp)
@@ -215,59 +213,20 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
                     }
                 }
 
-                // Content
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            name,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            timeAgo(match.createdAt),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    if (lat != null && lon != null) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp)
-                        ) {
-                            Icon(Icons.Default.LocationOn, null, Modifier.size(11.dp), Brand.copy(alpha = 0.7f))
-                            Text(
-                                formatCoords(lat, lon),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(
-                                onClick = {
-                                    val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
-                                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                            ) {
-                                Text("Map", style = MaterialTheme.typography.labelSmall, color = Brand)
-                            }
-                        }
-                    }
-
-                    // Platform-specific contact entries
-                    contactEntries.forEach { entry ->
-                        ContactEntryRow(entry = entry, onClick = {
-                            val uri = ContactParser.intentUri(entry) ?: return@ContactEntryRow
-                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
-                        })
-                    }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        timeAgo(match.createdAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
-                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Default.Delete, "Remove",
                         modifier = Modifier.size(15.dp),
@@ -275,23 +234,69 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
                     )
                 }
             }
+
+            // Contact chips
+            if (contactEntries.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    contactEntries.forEach { entry ->
+                        ContactChip(entry = entry, onClick = {
+                            val uri = ContactParser.intentUri(entry) ?: return@ContactChip
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
+                        })
+                    }
+                }
+            }
+
+            // Location row — no coordinates text, just a "Met nearby" label + Map button
+            if (lat != null && lon != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.Default.LocationOn, null, Modifier.size(12.dp), Brand.copy(alpha = 0.7f))
+                    Text(
+                        "Met nearby",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = {
+                            val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                        },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text("Map", style = MaterialTheme.typography.labelSmall, color = Brand)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun ContactEntryRow(entry: ContactEntry, onClick: () -> Unit) {
+private fun ContactChip(entry: ContactEntry, onClick: () -> Unit) {
     val isClickable = ContactParser.intentUri(entry) != null
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        modifier = if (isClickable) Modifier.clickable(onClick = onClick) else Modifier
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(entry.platform.brandColor.copy(alpha = 0.10f))
+            .then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        PlatformIcon(platform = entry.platform, size = 16.dp)
+        PlatformIcon(platform = entry.platform, size = 14.dp)
         Text(
             entry.value,
             style = MaterialTheme.typography.labelSmall,
-            color = if (isClickable) entry.platform.brandColor else MaterialTheme.colorScheme.onSurface
+            color = if (isClickable) entry.platform.brandColor else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
         )
     }
 }
@@ -305,10 +310,4 @@ private fun timeAgo(timestamp: Long): String {
         diff < 7 * 86_400_000L  -> "${diff / 86_400_000}d ago"
         else -> SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(timestamp))
     }
-}
-
-private fun formatCoords(lat: Double, lon: Double): String {
-    val latDir = if (lat >= 0) "N" else "S"
-    val lonDir = if (lon >= 0) "E" else "W"
-    return "%.3f°%s  %.3f°%s".format(abs(lat), latDir, abs(lon), lonDir)
 }

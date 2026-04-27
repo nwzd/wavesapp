@@ -11,6 +11,8 @@ import androidx.room.util.DBUtil;
 import androidx.room.util.TableInfo;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 import androidx.sqlite.db.SupportSQLiteOpenHelper;
+import com.olapp.data.local.dao.BlockedUserDao;
+import com.olapp.data.local.dao.BlockedUserDao_Impl;
 import com.olapp.data.local.dao.MatchDao;
 import com.olapp.data.local.dao.MatchDao_Impl;
 import com.olapp.data.local.dao.ReceivedOlaDao;
@@ -42,18 +44,21 @@ public final class OlaDatabase_Impl extends OlaDatabase {
 
   private volatile MatchDao _matchDao;
 
+  private volatile BlockedUserDao _blockedUserDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(6) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(8) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `user_profile` (`uid` TEXT NOT NULL, `displayName` TEXT NOT NULL, `contactInfo` TEXT NOT NULL, `photoUrl` TEXT NOT NULL, `bleToken` TEXT NOT NULL, `discoveryEnabled` INTEGER NOT NULL, `description` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`uid`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `user_profile` (`uid` TEXT NOT NULL, `displayName` TEXT NOT NULL, `contactInfo` TEXT NOT NULL, `photoUrl` TEXT NOT NULL, `bleToken` TEXT NOT NULL, `discoveryEnabled` INTEGER NOT NULL, `description` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `photoIsSelfie` INTEGER NOT NULL, PRIMARY KEY(`uid`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `received_ola` (`id` TEXT NOT NULL, `senderBleToken` TEXT NOT NULL, `senderDisplayName` TEXT NOT NULL, `senderPhotoUrl` TEXT NOT NULL, `senderContactInfo` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `sent_ola` (`id` TEXT NOT NULL, `receiverBleToken` TEXT NOT NULL, `receiverDisplayName` TEXT NOT NULL, `receiverPhotoUrl` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `match` (`id` TEXT NOT NULL, `otherBleToken` TEXT NOT NULL, `otherDisplayName` TEXT NOT NULL, `otherPhotoUrl` TEXT NOT NULL, `otherContactInfo` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `latitude` REAL, `longitude` REAL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `blocked_user` (`bleToken` TEXT NOT NULL, `displayName` TEXT NOT NULL, `blockedAt` INTEGER NOT NULL, PRIMARY KEY(`bleToken`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '81c8c71560c1ea173866682feac08bad')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c7f5781f10b0ddf7cdc408299758c7d')");
       }
 
       @Override
@@ -62,6 +67,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
         db.execSQL("DROP TABLE IF EXISTS `received_ola`");
         db.execSQL("DROP TABLE IF EXISTS `sent_ola`");
         db.execSQL("DROP TABLE IF EXISTS `match`");
+        db.execSQL("DROP TABLE IF EXISTS `blocked_user`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -105,7 +111,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsUserProfile = new HashMap<String, TableInfo.Column>(8);
+        final HashMap<String, TableInfo.Column> _columnsUserProfile = new HashMap<String, TableInfo.Column>(9);
         _columnsUserProfile.put("uid", new TableInfo.Column("uid", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsUserProfile.put("displayName", new TableInfo.Column("displayName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsUserProfile.put("contactInfo", new TableInfo.Column("contactInfo", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -114,6 +120,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
         _columnsUserProfile.put("discoveryEnabled", new TableInfo.Column("discoveryEnabled", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsUserProfile.put("description", new TableInfo.Column("description", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsUserProfile.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsUserProfile.put("photoIsSelfie", new TableInfo.Column("photoIsSelfie", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysUserProfile = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesUserProfile = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoUserProfile = new TableInfo("user_profile", _columnsUserProfile, _foreignKeysUserProfile, _indicesUserProfile);
@@ -176,9 +183,22 @@ public final class OlaDatabase_Impl extends OlaDatabase {
                   + " Expected:\n" + _infoMatch + "\n"
                   + " Found:\n" + _existingMatch);
         }
+        final HashMap<String, TableInfo.Column> _columnsBlockedUser = new HashMap<String, TableInfo.Column>(3);
+        _columnsBlockedUser.put("bleToken", new TableInfo.Column("bleToken", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBlockedUser.put("displayName", new TableInfo.Column("displayName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBlockedUser.put("blockedAt", new TableInfo.Column("blockedAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysBlockedUser = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesBlockedUser = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoBlockedUser = new TableInfo("blocked_user", _columnsBlockedUser, _foreignKeysBlockedUser, _indicesBlockedUser);
+        final TableInfo _existingBlockedUser = TableInfo.read(db, "blocked_user");
+        if (!_infoBlockedUser.equals(_existingBlockedUser)) {
+          return new RoomOpenHelper.ValidationResult(false, "blocked_user(com.olapp.data.local.entity.BlockedUserEntity).\n"
+                  + " Expected:\n" + _infoBlockedUser + "\n"
+                  + " Found:\n" + _existingBlockedUser);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "81c8c71560c1ea173866682feac08bad", "ebb2cd00172a8af9f441aec10dbf48eb");
+    }, "4c7f5781f10b0ddf7cdc408299758c7d", "d99d610923d3b8b57f5c787122aca2ae");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -189,7 +209,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "user_profile","received_ola","sent_ola","match");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "user_profile","received_ola","sent_ola","match","blocked_user");
   }
 
   @Override
@@ -202,6 +222,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
       _db.execSQL("DELETE FROM `received_ola`");
       _db.execSQL("DELETE FROM `sent_ola`");
       _db.execSQL("DELETE FROM `match`");
+      _db.execSQL("DELETE FROM `blocked_user`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -220,6 +241,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
     _typeConvertersMap.put(ReceivedOlaDao.class, ReceivedOlaDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(SentOlaDao.class, SentOlaDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(MatchDao.class, MatchDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(BlockedUserDao.class, BlockedUserDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -290,6 +312,20 @@ public final class OlaDatabase_Impl extends OlaDatabase {
           _matchDao = new MatchDao_Impl(this);
         }
         return _matchDao;
+      }
+    }
+  }
+
+  @Override
+  public BlockedUserDao blockedUserDao() {
+    if (_blockedUserDao != null) {
+      return _blockedUserDao;
+    } else {
+      synchronized(this) {
+        if(_blockedUserDao == null) {
+          _blockedUserDao = new BlockedUserDao_Impl(this);
+        }
+        return _blockedUserDao;
       }
     }
   }

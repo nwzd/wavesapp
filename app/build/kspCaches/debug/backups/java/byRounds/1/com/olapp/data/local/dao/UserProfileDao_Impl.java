@@ -49,7 +49,7 @@ public final class UserProfileDao_Impl implements UserProfileDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `user_profile` (`uid`,`displayName`,`contactInfo`,`photoUrl`,`bleToken`,`discoveryEnabled`,`description`,`createdAt`) VALUES (?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `user_profile` (`uid`,`displayName`,`contactInfo`,`photoUrl`,`bleToken`,`discoveryEnabled`,`description`,`createdAt`,`photoIsSelfie`) VALUES (?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -64,13 +64,15 @@ public final class UserProfileDao_Impl implements UserProfileDao {
         statement.bindLong(6, _tmp);
         statement.bindString(7, entity.getDescription());
         statement.bindLong(8, entity.getCreatedAt());
+        final int _tmp_1 = entity.getPhotoIsSelfie() ? 1 : 0;
+        statement.bindLong(9, _tmp_1);
       }
     };
     this.__updateAdapterOfUserProfileEntity = new EntityDeletionOrUpdateAdapter<UserProfileEntity>(__db) {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `user_profile` SET `uid` = ?,`displayName` = ?,`contactInfo` = ?,`photoUrl` = ?,`bleToken` = ?,`discoveryEnabled` = ?,`description` = ?,`createdAt` = ? WHERE `uid` = ?";
+        return "UPDATE OR ABORT `user_profile` SET `uid` = ?,`displayName` = ?,`contactInfo` = ?,`photoUrl` = ?,`bleToken` = ?,`discoveryEnabled` = ?,`description` = ?,`createdAt` = ?,`photoIsSelfie` = ? WHERE `uid` = ?";
       }
 
       @Override
@@ -85,7 +87,9 @@ public final class UserProfileDao_Impl implements UserProfileDao {
         statement.bindLong(6, _tmp);
         statement.bindString(7, entity.getDescription());
         statement.bindLong(8, entity.getCreatedAt());
-        statement.bindString(9, entity.getUid());
+        final int _tmp_1 = entity.getPhotoIsSelfie() ? 1 : 0;
+        statement.bindLong(9, _tmp_1);
+        statement.bindString(10, entity.getUid());
       }
     };
     this.__preparedStmtOfUpdateDiscovery = new SharedSQLiteStatement(__db) {
@@ -246,6 +250,7 @@ public final class UserProfileDao_Impl implements UserProfileDao {
           final int _cursorIndexOfDiscoveryEnabled = CursorUtil.getColumnIndexOrThrow(_cursor, "discoveryEnabled");
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
+          final int _cursorIndexOfPhotoIsSelfie = CursorUtil.getColumnIndexOrThrow(_cursor, "photoIsSelfie");
           final UserProfileEntity _result;
           if (_cursor.moveToFirst()) {
             final String _tmpUid;
@@ -266,7 +271,11 @@ public final class UserProfileDao_Impl implements UserProfileDao {
             _tmpDescription = _cursor.getString(_cursorIndexOfDescription);
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _result = new UserProfileEntity(_tmpUid,_tmpDisplayName,_tmpContactInfo,_tmpPhotoUrl,_tmpBleToken,_tmpDiscoveryEnabled,_tmpDescription,_tmpCreatedAt);
+            final boolean _tmpPhotoIsSelfie;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfPhotoIsSelfie);
+            _tmpPhotoIsSelfie = _tmp_1 != 0;
+            _result = new UserProfileEntity(_tmpUid,_tmpDisplayName,_tmpContactInfo,_tmpPhotoUrl,_tmpBleToken,_tmpDiscoveryEnabled,_tmpDescription,_tmpCreatedAt,_tmpPhotoIsSelfie);
           } else {
             _result = null;
           }
@@ -302,6 +311,7 @@ public final class UserProfileDao_Impl implements UserProfileDao {
           final int _cursorIndexOfDiscoveryEnabled = CursorUtil.getColumnIndexOrThrow(_cursor, "discoveryEnabled");
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
+          final int _cursorIndexOfPhotoIsSelfie = CursorUtil.getColumnIndexOrThrow(_cursor, "photoIsSelfie");
           final UserProfileEntity _result;
           if (_cursor.moveToFirst()) {
             final String _tmpUid;
@@ -322,7 +332,11 @@ public final class UserProfileDao_Impl implements UserProfileDao {
             _tmpDescription = _cursor.getString(_cursorIndexOfDescription);
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
-            _result = new UserProfileEntity(_tmpUid,_tmpDisplayName,_tmpContactInfo,_tmpPhotoUrl,_tmpBleToken,_tmpDiscoveryEnabled,_tmpDescription,_tmpCreatedAt);
+            final boolean _tmpPhotoIsSelfie;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfPhotoIsSelfie);
+            _tmpPhotoIsSelfie = _tmp_1 != 0;
+            _result = new UserProfileEntity(_tmpUid,_tmpDisplayName,_tmpContactInfo,_tmpPhotoUrl,_tmpBleToken,_tmpDiscoveryEnabled,_tmpDescription,_tmpCreatedAt,_tmpPhotoIsSelfie);
           } else {
             _result = null;
           }
