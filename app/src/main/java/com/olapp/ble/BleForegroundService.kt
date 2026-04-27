@@ -38,21 +38,27 @@ import kotlin.coroutines.resume
 
 private const val TAG = "BleForegroundService"
 private const val NOTIF_ID = 1001
-private const val EVICT_INTERVAL_MS          = 5 * 60 * 1000L   // run every 5 min
-private const val RECEIVED_OLA_TTL_MS        = 2 * 60 * 60 * 1000L   // 2 h — clear unreciprocated waves
-private const val SENT_OLA_TTL_MS            = 8 * 60 * 60 * 1000L   // 8 h — remember who you waved at
+private const val NOTIF_ID_NEARBY = 1002   // single aggregated nearby notification
+private const val NOTIF_ID_OLA_BASE   = 2000
+private const val NOTIF_ID_MATCH_BASE = 3000
+private const val EVICT_INTERVAL_MS          = 5 * 60 * 1000L
+private const val RECEIVED_OLA_TTL_MS        = 2 * 60 * 60 * 1000L
+private const val SENT_OLA_TTL_MS            = 8 * 60 * 60 * 1000L
 private const val SERVICE_CHANNEL = "ola_ble"
 private const val OLA_CHANNEL = "ola_received"
 private const val MATCH_CHANNEL = "ola_match"
 private const val NEARBY_CHANNEL = "ola_nearby"
-private const val QUIET_HOUR_START = 22   // 10 PM
-private const val QUIET_HOUR_END   = 8    // 8 AM
+private const val QUIET_HOUR_START = 22
+private const val QUIET_HOUR_END   = 8
+// Brand blue in ARGB for notification accent
+private const val BRAND_COLOR = 0xFF0EA5E9.toInt()
 
 @AndroidEntryPoint
 class BleForegroundService : Service() {
 
     @Inject lateinit var nearbyManager: NearbyManager
     @Inject lateinit var userRepository: UserRepository
+    @Inject lateinit var appPreferences: com.olapp.data.preferences.AppPreferences
 
     private val serviceJob = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + serviceJob)
@@ -64,11 +70,12 @@ class BleForegroundService : Service() {
     private var evictJob: Job? = null
     private var nearbyJob: Job? = null
     private var matchConfirmJob: Job? = null
+    private var blockReceivedJob: Job? = null
 
-    // Track tokens we've already notified this session to avoid repeat notifications
     private val notifiedOlaTokens    = HashSet<String>()
     private val notifiedMatchTokens  = HashSet<String>()
     private val notifiedNearbyTokens = HashSet<String>()
+    private var nearbyNotifShownThisSession = false
 
     private val bluetoothReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -145,11 +152,26 @@ class BleForegroundService : Service() {
 
         nearbyJob = scope.launch {
             nearbyManager.peers.collect { peers ->
-                peers.values.forEach { peer ->
-                    if (notifiedNearbyTokens.add(peer.bleToken) && !isQuietHours()) {
-                        showNearbyNotification(peer.bleToken, peer.displayName)
-                    }
+                val newPeers = peers.values.filter { notifiedNearbyTokens.add(it.bleToken) }
+                if (newPeers.isNotEmpty() && !isQuietHours()) {
+                    showNearbyNotification(notifiedNearbyTokens.size, newPeers.first().displayName)
                 }
+            }
+        }
+
+        // Load blocked tokens and block score so NearbyManager can enforce them
+        scope.launch {
+            nearbyManager.blockedTokens = userRepository.getBlockedTokens()
+        }
+        scope.launch {
+            nearbyManager.blockScore = appPreferences.getBlockScore()
+        }
+
+        blockReceivedJob = scope.launch {
+            nearbyManager.blockReceivedFlow.collect { fromToken ->
+                val count = appPreferences.addBlockReceivedFrom(fromToken)
+                nearbyManager.blockScore = count
+                Log.d(TAG, "Block score updated: $count (from $fromToken)")
             }
         }
 
@@ -180,6 +202,8 @@ class BleForegroundService : Service() {
                 notifiedOlaTokens.clear()
                 notifiedMatchTokens.clear()
                 notifiedNearbyTokens.clear()
+                nearbyNotifShownThisSession = false
+                getSystemService(NotificationManager::class.java).cancel(NOTIF_ID_NEARBY)
                 Log.d(TAG, "Notification state cleared")
             }
         }
@@ -196,6 +220,7 @@ class BleForegroundService : Service() {
         evictJob?.cancel()
         nearbyJob?.cancel()
         matchConfirmJob?.cancel()
+        blockReceivedJob?.cancel()
         serviceJob.cancel()
         nearbyManager.stop()
         Log.d(TAG, "Service destroyed")
@@ -222,11 +247,11 @@ class BleForegroundService : Service() {
         val profile = userRepository.getMyProfile() ?: return
         if (senderToken == profile.bleToken) return
 
-        // If we still have a match with this person and they're re-sending, auto-respond so
-        // they can re-create their side of the match without affecting ours.
+        // Already matched — send a match confirmation so they can recreate their side
+        // (do NOT send OLA back; that would create an infinite OLA ping-pong loop).
         if (userRepository.hasMatchWith(senderToken)) {
             nearbyManager.endpointIdForToken(senderToken)
-                ?.let { nearbyManager.sendOla(it) }
+                ?.let { nearbyManager.sendMatchConfirmation(it) }
             return
         }
 
@@ -261,6 +286,7 @@ class BleForegroundService : Service() {
                 latitude = location?.first,
                 longitude = location?.second
             )
+            nearbyManager.clearPendingOla(senderToken)
             nearbyManager.endpointIdForToken(senderToken)?.let { eid ->
                 nearbyManager.sendMatchConfirmation(eid)
                 if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
@@ -273,55 +299,34 @@ class BleForegroundService : Service() {
     }
 
     private fun showMatchNotification(senderToken: String, senderName: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-
-        val notifId = 3000 + (senderToken.hashCode().and(0x7FFFFFFF) % 1000)
-        val displayName = senderName.ifBlank { "Someone" }
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        val pi = PendingIntent.getActivity(
-            this, notifId, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        if (!hasNotifPermission()) return
+        val notifId = NOTIF_ID_MATCH_BASE + (senderToken.hashCode().and(0x7FFFFFFF) % 1000)
+        val name = senderName.ifBlank { "Someone" }
         val notif = NotificationCompat.Builder(this, MATCH_CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_menu_send)
-            .setContentTitle("✨ It's a vibe!")
-            .setContentText("You and $displayName both waved at each other")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(BRAND_COLOR)
+            .setContentTitle("It's a vibe with $name")
+            .setContentText("You both waved — open Waves to connect")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setContentIntent(pi)
+            .setContentIntent(mainActivityIntent(notifId))
             .build()
         getSystemService(NotificationManager::class.java).notify(notifId, notif)
     }
 
     private fun showOlaNotification(senderToken: String, senderName: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-
-        val notifId = 2000 + (senderToken.hashCode().and(0x7FFFFFFF) % 1000)
-        val displayName = senderName.ifBlank { "Someone" }
-
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        val pi = PendingIntent.getActivity(
-            this, notifId, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
+        if (!hasNotifPermission()) return
+        val notifId = NOTIF_ID_OLA_BASE + (senderToken.hashCode().and(0x7FFFFFFF) % 1000)
+        val name = senderName.ifBlank { "Someone" }
         val notif = NotificationCompat.Builder(this, OLA_CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_menu_send)
-            .setContentTitle("🌊 $displayName sent you a wave")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(BRAND_COLOR)
+            .setContentTitle("$name sent you a wave")
             .setContentText("Open Waves to wave back")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setContentIntent(pi)
+            .setContentIntent(mainActivityIntent(notifId))
             .build()
-
         getSystemService(NotificationManager::class.java).notify(notifId, notif)
     }
 
@@ -369,27 +374,39 @@ class BleForegroundService : Service() {
         return hour >= QUIET_HOUR_START || hour < QUIET_HOUR_END
     }
 
-    private fun showNearbyNotification(token: String, name: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-        val notifId = 4000 + (token.hashCode().and(0x7FFFFFFF) % 1000)
-        val displayName = name.ifBlank { "Someone" }
-        val pi = PendingIntent.getActivity(
-            this, notifId, Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    // Single aggregated nearby notification — always reuses NOTIF_ID_NEARBY.
+    // totalSeen = total unique tokens seen this session; firstName = first new arrival's name.
+    private fun showNearbyNotification(totalSeen: Int, firstName: String) {
+        if (!hasNotifPermission()) return
+        val name = firstName.ifBlank { "Someone" }
+        val title = if (totalSeen == 1) "$name is nearby" else "$totalSeen people nearby"
+        val text  = "Open Waves to say hello"
         val notif = NotificationCompat.Builder(this, NEARBY_CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
-            .setContentTitle("$displayName is nearby 👋")
-            .setContentText("Tap to wave")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(BRAND_COLOR)
+            .setContentTitle(title)
+            .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
-            .setContentIntent(pi)
+            .setOnlyAlertOnce(nearbyNotifShownThisSession)  // vibrate/sound only on first
+            .setContentIntent(mainActivityIntent(NOTIF_ID_NEARBY))
             .build()
-        getSystemService(NotificationManager::class.java).notify(notifId, notif)
+        nearbyNotifShownThisSession = true
+        getSystemService(NotificationManager::class.java).notify(NOTIF_ID_NEARBY, notif)
     }
+
+    private fun hasNotifPermission() =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    private fun mainActivityIntent(requestCode: Int): PendingIntent =
+        PendingIntent.getActivity(
+            this, requestCode,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
     // ------------------------------------------------------------------
     // Notifications
@@ -398,7 +415,8 @@ class BleForegroundService : Service() {
     private fun buildNotification() = NotificationCompat.Builder(this, SERVICE_CHANNEL)
         .setContentTitle(getString(R.string.app_name))
         .setContentText(getString(R.string.ble_notification_text))
-        .setSmallIcon(android.R.drawable.ic_menu_compass)
+        .setSmallIcon(R.drawable.ic_notification)
+        .setColor(BRAND_COLOR)
         .setOngoing(true)
         .setContentIntent(
             PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)

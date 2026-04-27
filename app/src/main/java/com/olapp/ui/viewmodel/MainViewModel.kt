@@ -24,6 +24,8 @@ sealed class MainUiState {
     data object Loading : MainUiState()
     data object NeedsTermsAcceptance : MainUiState()
     data object NeedsSetup : MainUiState()
+    data object Restricted : MainUiState()
+    data object NeedsTutorial : MainUiState()
     data object Ready : MainUiState()
 }
 
@@ -52,6 +54,13 @@ class MainViewModel @Inject constructor(
     fun refreshState() {
         viewModelScope.launch {
             appPreferences.setSetupComplete(true)
+            _uiState.value = withContext(Dispatchers.IO) { safeResolveState() }
+        }
+    }
+
+    fun setTutorialSeen() {
+        viewModelScope.launch {
+            appPreferences.setTutorialSeen()
             _uiState.value = MainUiState.Ready
         }
     }
@@ -69,10 +78,13 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun resolveState(): MainUiState {
+        if (appPreferences.isAccountRestricted.first()) return MainUiState.Restricted
         val termsAccepted = appPreferences.isTermsAccepted.first()
         if (!termsAccepted) return MainUiState.NeedsTermsAcceptance
         val setupComplete = appPreferences.isSetupComplete.first()
         val profile = userRepository.getMyProfile()
-        return if (!setupComplete || profile == null) MainUiState.NeedsSetup else MainUiState.Ready
+        if (!setupComplete || profile == null) return MainUiState.NeedsSetup
+        val tutorialSeen = appPreferences.isTutorialSeen.first()
+        return if (!tutorialSeen) MainUiState.NeedsTutorial else MainUiState.Ready
     }
 }

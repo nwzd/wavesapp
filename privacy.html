@@ -202,10 +202,12 @@
       <h2>2. What data Waves processes and where it lives</h2>
       <p>Waves is designed around a core principle: <strong>your data stays on your device</strong>. There is no Waves server, no cloud database, and no account in the traditional sense. Here is everything that exists:</p>
       <ul>
-        <li><strong>Your profile</strong> (display name, photo, bio, contact info, discovery preference) — stored only in your phone's local app storage.</li>
+        <li><strong>Your profile</strong> (display name, photo, bio, contact info, discovery preference) — stored only in your phone's local app storage. Contact info is limited to Instagram, Twitter/X, and email.</li>
+        <li><strong>Your date of birth</strong> — entered once on first setup to verify you are 18 or older. Stored only on your device; never transmitted anywhere.</li>
         <li><strong>Waves you have sent</strong> — stored only on your phone.</li>
         <li><strong>Waves you have received</strong> — stored only on your phone.</li>
-        <li><strong>Mutual matches (Vibes)</strong> — stored only on your phone.</li>
+        <li><strong>Mutual matches (Vibes)</strong> — stored only on your phone, including the approximate location where the match occurred (used only to display a map pin to you).</li>
+        <li><strong>Block list</strong> — tokens of users you have blocked, stored locally so they cannot rediscover you.</li>
         <li><strong>Waves ID</strong> — a random identifier generated once when you first set up the app, stored only on your device, and broadcast locally over Bluetooth/Wi-Fi Direct. It is not linked to your real identity and never sent to any server.</li>
       </ul>
       <div class="highlight-box">
@@ -231,13 +233,22 @@
     </div>
 
     <div class="policy-section">
-      <h2>5. Third-party services</h2>
+      <h2>5. Third-party services and on-device processing</h2>
       <p>Waves uses the following third-party SDKs on the device:</p>
       <ul>
         <li><strong>Google Nearby Connections API</strong> — used for peer-to-peer device discovery and data transfer. Google's privacy policy applies to this SDK's use of Bluetooth and Wi-Fi hardware. We do not send any user-identifiable data to Google through this API.</li>
+        <li><strong>Google ML Kit (Face Detection &amp; Image Labeling)</strong> — used entirely on-device when you upload a profile photo from your gallery. It checks that the photo contains exactly one face and does not contain inappropriate content (nudity or similar). The photo is analysed locally; no image data or biometric information is sent to Google or to us. The analysis result (pass/fail) is used solely to allow or reject the photo. No biometric template is stored.</li>
         <li><strong>Coil (image loading library)</strong> — used to display profile photos stored locally on the device. No data is transmitted externally.</li>
       </ul>
       <p>We do not integrate any analytics SDKs, advertising SDKs, or crash-reporting services that would transmit personal data off the device.</p>
+      <div class="highlight-box">
+        <p>The face detection processing described above constitutes automated processing of biometric data under GDPR Article 9. The legal basis is your explicit consent, given when you choose to upload a profile photo. You may decline to set a photo at any time; the app functions without one.</p>
+      </div>
+    </div>
+
+    <div class="policy-section">
+      <h2>5a. Block feature and account restriction</h2>
+      <p>When you block another user, a short anonymous signal is sent to their device over the existing peer-to-peer connection. This signal contains no personal information — only an indication that a block has occurred. The receiving device increments a local counter of unique blockers stored in on-device preferences. If three distinct users block the same account, that account is permanently restricted on that device. No central record of blocks is maintained by us.</p>
     </div>
 
     <div class="policy-section">
@@ -258,8 +269,8 @@
     </div>
 
     <div class="policy-section">
-      <h2>8. Children</h2>
-      <p>Waves is not intended for use by anyone under the age of 18. We do not knowingly collect data from minors. Because all data is stored locally, we have no mechanism to verify or enforce age at a server level — we rely on platform (Google Play) age gates and parental controls.</p>
+      <h2>8. Children and age verification</h2>
+      <p>Waves is not intended for use by anyone under the age of 18. On first setup, users must enter their date of birth; anyone under 18 is prevented from creating a profile. This date of birth is stored only on the device and is never transmitted. Because all data is stored locally, we cannot enforce this at a server level beyond first setup — we also rely on platform (Google Play) age gates and parental controls.</p>
     </div>
 
     <div class="policy-section">

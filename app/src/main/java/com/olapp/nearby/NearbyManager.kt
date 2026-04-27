@@ -50,6 +50,7 @@ private const val MSG_PROFILE       = "P"   // legacy full profile (handle if re
 private const val MSG_OLA           = "O"
 private const val MSG_MATCH_LOC     = "L"   // match location share — sent after match is created
 private const val MSG_MATCH_CONFIRM = "MC"  // sent by whoever detects mutual match; other side creates their match
+private const val MSG_BLOCK         = "BL"  // sent to notify a peer they have been blocked
 
 // Thumbnail: very small, arrives in <100 ms — keeps discovery instant
 private const val THUMB_MAX_PX       = 40
@@ -59,7 +60,10 @@ private const val PHOTO_MAX_PX       = 128
 private const val PHOTO_JPEG_QUALITY = 70
 private const val PHOTO_DELAY_MS     = 100L
 // Refresh BLE scan periodically to catch newly arrived peers
-private const val SCAN_REFRESH_MS    = 12_000L
+private const val SCAN_REFRESH_MS       = 5_000L   // regular refresh cadence
+private const val SCAN_EARLY_REFRESH_MS = 2_000L   // quick second scan after startup
+private const val SCAN_RESTART_GAP_MS  =    50L   // gap between stop and start discovery
+private const val RETRY_DELAY_MS        = 2_000L   // retry failed connection attempts
 // HD photo: only sent on demand when the other user zooms in
 private const val PHOTO_HD_MAX_PX       = 400
 private const val PHOTO_HD_JPEG_QUALITY = 85
@@ -79,7 +83,8 @@ data class NearbyPeer(
     val displayName: String,
     val description: String = "",
     val contactInfo: String = "",
-    val photoPath: String? = null
+    val photoPath: String? = null,
+    val photoIsSelfie: Boolean = false
 )
 
 @Singleton
@@ -98,12 +103,25 @@ class NearbyManager @Inject constructor(
     val olaReceived = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 8)
     val locationReceived = MutableSharedFlow<Triple<String, Double, Double>>(extraBufferCapacity = 8)
     val matchConfirmReceived = MutableSharedFlow<MatchConfirmData>(extraBufferCapacity = 8)
+    val blockReceivedFlow = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     @Volatile var myToken: String = ""
     @Volatile var myDisplayName: String = ""
     @Volatile var matchedTokens: Set<String> = emptySet()
+    @Volatile var blockedTokens: Set<String> = emptySet()
+    @Volatile var blockScore: Int = 0
     @Volatile private var currentProfile: UserProfile? = null
     private var scanRefreshJob: Job? = null
+
+    // OLAs waiting to be delivered. Token stays until matched or explicitly cleared.
+    private val pendingOlaTokens = java.util.Collections.newSetFromMap(
+        java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    )
+    // Tracks tokens to which we've already sent an OLA in the current connection session.
+    // Cleared per-token when the connection drops, so reconnects get one retry.
+    private val sentOlaTokensThisConn = java.util.Collections.newSetFromMap(
+        java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    )
 
     // Cached outbound payloads — rebuilt whenever profile changes
     @Volatile private var cachedMiniJson: String = """{"t":"m","tok":"","n":"","d":"","c":""}"""
@@ -125,9 +143,22 @@ class NearbyManager @Inject constructor(
         currentProfile = profile
         runCatching { client.stopAdvertising() }
         runCatching { client.stopDiscovery() }
-        doStartAdvertising(profile)
+        if (shouldAdvertise()) doStartAdvertising(profile)
+        else Log.d(TAG, "Advertising suppressed (blockScore=$blockScore)")
         doStartDiscovery()
         startScanRefresh()
+    }
+
+    private fun shouldAdvertise(): Boolean {
+        val probability = when (blockScore) {
+            0    -> 1.00
+            1    -> 0.75
+            2    -> 0.50
+            3    -> 0.25
+            4    -> 0.10
+            else -> 0.05
+        }
+        return Math.random() < probability
     }
 
     fun stop() {
@@ -139,20 +170,57 @@ class NearbyManager @Inject constructor(
         runCatching { client.stopDiscovery() }
         _peers.value = emptyMap()
         _pendingEndpoints.value = emptyMap()
+        sentOlaTokensThisConn.clear()
+        // Keep pendingOlaTokens — will be delivered when discovery restarts
     }
 
     private fun startScanRefresh() {
         scanRefreshJob?.cancel()
         scanRefreshJob = scope.launch {
+            // Early rescan catches peers whose BLE advertisement was missed at startup
+            delay(SCAN_EARLY_REFRESH_MS)
+            runCatching { client.stopDiscovery() }
+            delay(SCAN_RESTART_GAP_MS)
+            doStartDiscovery()
+
             while (true) {
                 delay(SCAN_REFRESH_MS)
-                // Only restart discovery — stopping advertising would fire onEndpointLost
-                // on peers, causing visible flicker in their Nearby list.
+                flushPendingOlas()
+                // Restart discovery only — stopping advertising would cause visible flicker.
                 runCatching { client.stopDiscovery() }
-                delay(150)
+                delay(SCAN_RESTART_GAP_MS)
                 doStartDiscovery()
             }
         }
+    }
+
+    // Add bleToken to pending and immediately attempt delivery if connected.
+    // The token stays in pendingOlaTokens until the peer is matched (checked on each flush).
+    fun queueOlaForToken(bleToken: String) {
+        if (bleToken in matchedTokens) return
+        pendingOlaTokens.add(bleToken)
+        flushPendingOla(bleToken)
+    }
+
+    // Try to deliver one pending OLA. Skips if already sent in this connection session
+    // to prevent retry spam (which causes OLA ping-pong between matched peers).
+    private fun flushPendingOla(bleToken: String) {
+        if (bleToken in matchedTokens) { pendingOlaTokens.remove(bleToken); return }
+        if (bleToken in sentOlaTokensThisConn) return   // sent already this connection
+        val endpointId = endpointIdForToken(bleToken) ?: return
+        sendOla(endpointId)
+        sentOlaTokensThisConn.add(bleToken)
+    }
+
+    // Called by ViewModel when a match is created locally so we stop retrying immediately.
+    fun clearPendingOla(bleToken: String) {
+        pendingOlaTokens.remove(bleToken)
+        sentOlaTokensThisConn.remove(bleToken)
+    }
+
+    // Retry all pending OLAs against currently connected peers.
+    fun flushPendingOlas() {
+        for (token in pendingOlaTokens.toList()) flushPendingOla(token)
     }
 
     fun sendOla(endpointId: String) {
@@ -161,7 +229,9 @@ class NearbyManager @Inject constructor(
             put("tok", myToken)
             put("n", myDisplayName)
         }
-        send(endpointId, msg.toString())
+        runCatching {
+            client.sendPayload(endpointId, Payload.fromBytes(msg.toString().toByteArray()))
+        }.onFailure { Log.e(TAG, "OLA send failed to $endpointId", it) }
     }
 
     fun requestHdPhoto(endpointId: String) {
@@ -190,6 +260,17 @@ class NearbyManager @Inject constructor(
         send(endpointId, msg.toString())
     }
 
+    fun addBlockedToken(token: String) {
+        blockedTokens = blockedTokens + token
+        pendingOlaTokens.remove(token)
+        val eid = _peers.value.values.find { it.bleToken == token }?.endpointId
+        _peers.update { map -> map.filterValues { it.bleToken != token } }
+        if (eid != null) {
+            sendBlockMessage(eid)
+            scope.launch { delay(500); runCatching { client.disconnectFromEndpoint(eid) } }
+        }
+    }
+
     fun endpointIdForToken(token: String): String? =
         _peers.value.values.find { it.bleToken == token }?.endpointId
 
@@ -206,7 +287,7 @@ class NearbyManager @Inject constructor(
         }
         retryCount[endpointId] = attempts + 1
         scope.launch {
-            delay(10_000L)  // was 3 s — less aggressive radio wake-ups
+            delay(RETRY_DELAY_MS)
             client.requestConnection(myToken, endpointId, connectionLifecycleCallback)
                 .addOnSuccessListener { retryCount.remove(endpointId) }
                 .addOnFailureListener { Log.w(TAG, "retry $attempts failed $endpointId: $it") }
@@ -246,6 +327,10 @@ class NearbyManager @Inject constructor(
                     Log.d(TAG, "Skipping $endpointId — already vibed with $tok")
                     return
                 }
+                if (tok in blockedTokens) {
+                    Log.d(TAG, "Skipping $endpointId — blocked token $tok")
+                    return
+                }
                 _pendingEndpoints.update { it + (endpointId to PendingPeer(tok, name)) }
             }
             client.requestConnection(myToken, endpointId, connectionLifecycleCallback)
@@ -279,10 +364,18 @@ class NearbyManager @Inject constructor(
                 // 2. Low-res thumbnail — avatar visible in <100 ms
                 cachedThumbJson?.let { send(endpointId, it) }
                 // 3. Full-res photo — sent after a short delay to avoid congestion
-                val fullPhoto = cachedPhotoJson ?: return
+                val fullPhoto = cachedPhotoJson
+                val peerToken = _pendingEndpoints.value[endpointId]?.bleToken
                 scope.launch {
-                    delay(PHOTO_DELAY_MS)
-                    send(endpointId, fullPhoto)
+                    if (fullPhoto != null) {
+                        delay(PHOTO_DELAY_MS)
+                        send(endpointId, fullPhoto)
+                    }
+                    // Flush any queued OLA for this peer after identity exchange settles
+                    if (peerToken != null) {
+                        delay(PHOTO_DELAY_MS + 300)
+                        flushPendingOla(peerToken)
+                    }
                 }
             } else {
                 Log.w(TAG, "Connection failed $endpointId: ${result.status.statusCode}")
@@ -293,8 +386,11 @@ class NearbyManager @Inject constructor(
 
         override fun onDisconnected(endpointId: String) {
             Log.d(TAG, "Disconnected $endpointId")
+            val bleToken = _peers.value[endpointId]?.bleToken
             _peers.update { it - endpointId }
             _pendingEndpoints.update { it - endpointId }
+            // Allow one more OLA attempt on reconnect
+            if (bleToken != null) sentOlaTokensThisConn.remove(bleToken)
         }
     }
 
@@ -312,12 +408,17 @@ class NearbyManager @Inject constructor(
                     MSG_OLA               -> handleOla(json)
                     MSG_MATCH_LOC         -> handleMatchLocation(json)
                     MSG_MATCH_CONFIRM     -> handleMatchConfirm(endpointId, json)
+                    MSG_BLOCK             -> handleBlock(json)
                     else                  -> Unit
                 }
             }.onFailure { Log.e(TAG, "Payload parse error from $endpointId", it) }
         }
 
-        override fun onPayloadTransferUpdate(endpointId: String, update: PayloadTransferUpdate) {}
+        override fun onPayloadTransferUpdate(endpointId: String, update: PayloadTransferUpdate) {
+            if (update.status == PayloadTransferUpdate.Status.FAILURE) {
+                Log.w(TAG, "Payload ${update.payloadId} delivery failed to $endpointId — will retry on next flush")
+            }
+        }
     }
 
     // ------------------------------------------------------------------
@@ -325,24 +426,41 @@ class NearbyManager @Inject constructor(
     // ------------------------------------------------------------------
 
     private fun handleIdentity(endpointId: String, json: JSONObject) {
-        val token   = json.optString("tok").ifEmpty { return }
-        val name    = json.optString("n")
-        val desc    = json.optString("d")
-        val contact = json.optString("c")
+        val token       = json.optString("tok").ifEmpty { return }
+        val name        = json.optString("n")
+        val desc        = json.optString("d")
+        val contact     = json.optString("c")
+        val isSelfie    = json.optInt("s", 0) == 1
+
+        if (token in blockedTokens) {
+            Log.d(TAG, "Blocked token connected: $token — rejecting")
+            sendBlockMessage(endpointId)
+            scope.launch { delay(500); runCatching { client.disconnectFromEndpoint(endpointId) } }
+            return
+        }
+
         // Legacy full-profile may include photo inline
         val photoPath = json.optString("photo").takeIf { it.isNotEmpty() }
             ?.let { savePhoto(token, it) }
 
         _peers.update { map ->
-            // Preserve existing photo if we already have one (from a previous MSG_PHOTO)
             val existing = map[endpointId]
             map + (endpointId to NearbyPeer(
                 endpointId, token, name, desc, contact,
-                photoPath ?: existing?.photoPath
+                photoPath ?: existing?.photoPath,
+                isSelfie
             ))
         }
         _pendingEndpoints.update { it - endpointId }
         Log.d(TAG, "Identity from $endpointId: $name ($token)")
+
+        // Deliver any queued OLA now that this peer's connection is confirmed
+        if (token in pendingOlaTokens) {
+            scope.launch {
+                delay(200)
+                flushPendingOla(token)
+            }
+        }
     }
 
     private fun handlePhoto(endpointId: String, json: JSONObject, hd: Boolean) {
@@ -376,6 +494,17 @@ class NearbyManager @Inject constructor(
         matchConfirmReceived.tryEmit(MatchConfirmData(tok, name, contact, photo))
     }
 
+    private fun handleBlock(json: JSONObject) {
+        val fromToken = json.optString("tok").ifEmpty { return }
+        Log.d(TAG, "Received block signal from $fromToken")
+        blockReceivedFlow.tryEmit(fromToken)
+    }
+
+    private fun sendBlockMessage(endpointId: String) {
+        val msg = JSONObject().apply { put("t", MSG_BLOCK); put("tok", myToken) }
+        send(endpointId, msg.toString())
+    }
+
     private fun handleMatchLocation(json: JSONObject) {
         val tok = json.optString("tok").ifEmpty { return }
         val lat = json.optDouble("lat", Double.NaN).takeIf { !it.isNaN() } ?: return
@@ -406,6 +535,7 @@ class NearbyManager @Inject constructor(
         put("n", profile.displayName)
         put("d", profile.description)
         put("c", profile.contactInfo)
+        if (profile.photoIsSelfie) put("s", 1)
     }.toString()
 
     private fun buildPhotoJson(profile: UserProfile, maxPx: Int, quality: Int, msgType: String): String? {

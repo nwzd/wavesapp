@@ -94,10 +94,13 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                 TermsDivider()
 
                 TermsSection("Acceptable use") {
-                    "You agree not to use Waves to harass, stalk, threaten, or deceive others. " +
-                    "You agree not to use the app for any unlawful purpose. Misuse may result " +
-                    "in permanent removal from the app. We reserve the right to terminate access " +
-                    "at any time, for any reason."
+                    "You must not use Waves to harass, stalk, threaten, impersonate, or deceive others. " +
+                    "You must not upload or share any content that is sexually explicit, depicts minors in any inappropriate way, " +
+                    "promotes violence, discrimination, or illegal activity, or violates the rights of any third party. " +
+                    "You must not share another person's contact details without their consent. " +
+                    "You must not attempt to circumvent safety features or exploit technical vulnerabilities. " +
+                    "Violations may result in your account being permanently restricted. " +
+                    "We reserve the right to take action against any account for any reason."
                 }
 
                 TermsDivider()

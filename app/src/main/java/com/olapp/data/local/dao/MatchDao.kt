@@ -33,6 +33,9 @@ interface MatchDao {
     @Query("UPDATE `match` SET latitude = :lat, longitude = :lon WHERE otherBleToken = :bleToken AND latitude IS NULL")
     suspend fun updateLocation(bleToken: String, lat: Double, lon: Double)
 
+    @Query("DELETE FROM match WHERE otherBleToken = :bleToken")
+    suspend fun deleteByBleToken(bleToken: String)
+
     @Query("DELETE FROM match")
     suspend fun deleteAll()
 }

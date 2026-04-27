@@ -11,12 +11,14 @@ import com.olapp.ble.BleForegroundService_MembersInjector;
 import com.olapp.ble.BootReceiver;
 import com.olapp.ble.BootReceiver_MembersInjector;
 import com.olapp.data.local.OlaDatabase;
+import com.olapp.data.local.dao.BlockedUserDao;
 import com.olapp.data.local.dao.MatchDao;
 import com.olapp.data.local.dao.ReceivedOlaDao;
 import com.olapp.data.local.dao.SentOlaDao;
 import com.olapp.data.local.dao.UserProfileDao;
 import com.olapp.data.preferences.AppPreferences;
 import com.olapp.data.repository.UserRepository;
+import com.olapp.di.AppModule_ProvideBlockedUserDaoFactory;
 import com.olapp.di.AppModule_ProvideDatabaseFactory;
 import com.olapp.di.AppModule_ProvideMatchDaoFactory;
 import com.olapp.di.AppModule_ProvideReceivedOlaDaoFactory;
@@ -413,30 +415,30 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_olapp_ui_viewmodel_DiscoveryViewModel = "com.olapp.ui.viewmodel.DiscoveryViewModel";
-
-      static String com_olapp_ui_viewmodel_ProfileViewModel = "com.olapp.ui.viewmodel.ProfileViewModel";
-
-      static String com_olapp_ui_viewmodel_MainViewModel = "com.olapp.ui.viewmodel.MainViewModel";
-
       static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
+
+      static String com_olapp_ui_viewmodel_DiscoveryViewModel = "com.olapp.ui.viewmodel.DiscoveryViewModel";
 
       static String com_olapp_ui_viewmodel_OlaViewModel = "com.olapp.ui.viewmodel.OlaViewModel";
 
-      @KeepFieldType
-      DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
+      static String com_olapp_ui_viewmodel_MainViewModel = "com.olapp.ui.viewmodel.MainViewModel";
 
-      @KeepFieldType
-      ProfileViewModel com_olapp_ui_viewmodel_ProfileViewModel2;
-
-      @KeepFieldType
-      MainViewModel com_olapp_ui_viewmodel_MainViewModel2;
+      static String com_olapp_ui_viewmodel_ProfileViewModel = "com.olapp.ui.viewmodel.ProfileViewModel";
 
       @KeepFieldType
       SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
 
       @KeepFieldType
+      DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
+
+      @KeepFieldType
       OlaViewModel com_olapp_ui_viewmodel_OlaViewModel2;
+
+      @KeepFieldType
+      MainViewModel com_olapp_ui_viewmodel_MainViewModel2;
+
+      @KeepFieldType
+      ProfileViewModel com_olapp_ui_viewmodel_ProfileViewModel2;
     }
   }
 
@@ -489,30 +491,30 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
-
-      static String com_olapp_ui_viewmodel_DiscoveryViewModel = "com.olapp.ui.viewmodel.DiscoveryViewModel";
-
       static String com_olapp_ui_viewmodel_OlaViewModel = "com.olapp.ui.viewmodel.OlaViewModel";
-
-      static String com_olapp_ui_viewmodel_ProfileViewModel = "com.olapp.ui.viewmodel.ProfileViewModel";
 
       static String com_olapp_ui_viewmodel_MainViewModel = "com.olapp.ui.viewmodel.MainViewModel";
 
-      @KeepFieldType
-      SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
+      static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
 
-      @KeepFieldType
-      DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
+      static String com_olapp_ui_viewmodel_ProfileViewModel = "com.olapp.ui.viewmodel.ProfileViewModel";
+
+      static String com_olapp_ui_viewmodel_DiscoveryViewModel = "com.olapp.ui.viewmodel.DiscoveryViewModel";
 
       @KeepFieldType
       OlaViewModel com_olapp_ui_viewmodel_OlaViewModel2;
 
       @KeepFieldType
+      MainViewModel com_olapp_ui_viewmodel_MainViewModel2;
+
+      @KeepFieldType
+      SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
+
+      @KeepFieldType
       ProfileViewModel com_olapp_ui_viewmodel_ProfileViewModel2;
 
       @KeepFieldType
-      MainViewModel com_olapp_ui_viewmodel_MainViewModel2;
+      DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -633,6 +635,7 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
     private BleForegroundService injectBleForegroundService2(BleForegroundService instance) {
       BleForegroundService_MembersInjector.injectNearbyManager(instance, singletonCImpl.nearbyManagerProvider.get());
       BleForegroundService_MembersInjector.injectUserRepository(instance, singletonCImpl.userRepositoryProvider.get());
+      BleForegroundService_MembersInjector.injectAppPreferences(instance, singletonCImpl.appPreferencesProvider.get());
       return instance;
     }
   }
@@ -670,6 +673,10 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
     private MatchDao matchDao() {
       return AppModule_ProvideMatchDaoFactory.provideMatchDao(provideDatabaseProvider.get());
+    }
+
+    private BlockedUserDao blockedUserDao() {
+      return AppModule_ProvideBlockedUserDaoFactory.provideBlockedUserDao(provideDatabaseProvider.get());
     }
 
     @SuppressWarnings("unchecked")
@@ -730,7 +737,7 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
           return (T) new NearbyManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           case 2: // com.olapp.data.repository.UserRepository 
-          return (T) new UserRepository(singletonCImpl.userProfileDao(), singletonCImpl.receivedOlaDao(), singletonCImpl.sentOlaDao(), singletonCImpl.matchDao());
+          return (T) new UserRepository(singletonCImpl.userProfileDao(), singletonCImpl.receivedOlaDao(), singletonCImpl.sentOlaDao(), singletonCImpl.matchDao(), singletonCImpl.blockedUserDao());
 
           case 3: // com.olapp.data.local.OlaDatabase 
           return (T) AppModule_ProvideDatabaseFactory.provideDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));

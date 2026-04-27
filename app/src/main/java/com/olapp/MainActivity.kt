@@ -32,8 +32,11 @@ import com.olapp.ui.theme.Tangerine
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.olapp.ble.BleForegroundService
 import com.olapp.ui.navigation.MainNavigation
+import com.olapp.ui.screen.ContactScreen
+import com.olapp.ui.screen.RestrictedScreen
 import com.olapp.ui.screen.SetupScreen
 import com.olapp.ui.screen.TermsScreen
+import com.olapp.ui.screen.TutorialScreen
 import com.olapp.ui.theme.OlaTheme
 import com.olapp.ui.viewmodel.MainUiState
 import com.olapp.ui.viewmodel.MainViewModel
@@ -95,6 +98,19 @@ class MainActivity : ComponentActivity() {
 
                     MainUiState.NeedsSetup -> SetupScreen(
                         onSaved = { viewModel.refreshState() }
+                    )
+
+                    MainUiState.Restricted -> {
+                        val showContact = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                        if (showContact.value) {
+                            ContactScreen(onBack = { showContact.value = false })
+                        } else {
+                            RestrictedScreen(onContact = { showContact.value = true })
+                        }
+                    }
+
+                    MainUiState.NeedsTutorial -> TutorialScreen(
+                        onDone = { viewModel.setTutorialSeen() }
                     )
 
                     MainUiState.Ready -> {

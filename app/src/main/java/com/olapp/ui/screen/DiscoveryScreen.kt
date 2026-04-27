@@ -34,8 +34,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.WifiTethering
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
@@ -170,7 +173,8 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel = hiltViewModel()) {
                     NearbyDeviceCard(
                         device = device,
                         onSendOla = { viewModel.sendOla(device.bleToken) },
-                        onPhotoZoomed = { viewModel.requestHdPhoto(device.bleToken) }
+                        onPhotoZoomed = { viewModel.requestHdPhoto(device.bleToken) },
+                        onBlock = { viewModel.blockUser(device.bleToken) }
                     )
                 }
             }
@@ -292,7 +296,30 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
 }
 
 @Composable
-private fun NearbyDeviceCard(device: NearbyDevice, onSendOla: () -> Unit, onPhotoZoomed: () -> Unit) {
+private fun NearbyDeviceCard(
+    device: NearbyDevice,
+    onSendOla: () -> Unit,
+    onPhotoZoomed: () -> Unit,
+    onBlock: () -> Unit
+) {
+    var showBlockDialog by remember { mutableStateOf(false) }
+
+    if (showBlockDialog) {
+        AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = { Text("Block ${device.displayName}?") },
+            text = { Text("They won't be able to see you nearby and you won't see them.") },
+            confirmButton = {
+                TextButton(onClick = { showBlockDialog = false; onBlock() }) {
+                    Text("Block", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -334,7 +361,20 @@ private fun NearbyDeviceCard(device: NearbyDevice, onSendOla: () -> Unit, onPhot
             if (device.isPending) {
                 StatusChip(text = "•••", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             } else when (device.status) {
-                WaveStatus.NONE      -> GradientButton(text = "Wave", onClick = onSendOla)
+                WaveStatus.NONE -> Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { showBlockDialog = true }, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Default.Block,
+                            contentDescription = "Block",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    GradientButton(text = "Wave", onClick = onSendOla)
+                }
                 WaveStatus.WAVE_SENT -> StatusChip(text = "Waved ✓", tint = Indigo)
                 WaveStatus.MATCHED   -> StatusChip(text = "Vibing", tint = Brand)
             }
@@ -344,7 +384,13 @@ private fun NearbyDeviceCard(device: NearbyDevice, onSendOla: () -> Unit, onPhot
 
 @Composable
 private fun PeerAvatar(device: NearbyDevice, size: Dp, onZoomed: (() -> Unit)? = null) {
-    ProfileAvatar(photoPath = device.photoPath, name = device.displayName, size = size, onZoomed = onZoomed)
+    ProfileAvatar(
+        photoPath = device.photoPath,
+        name = device.displayName,
+        size = size,
+        photoIsSelfie = device.photoIsSelfie,
+        onZoomed = onZoomed
+    )
 }
 
 @Composable
@@ -353,27 +399,49 @@ fun ProfileAvatar(
     name: String,
     size: Dp,
     modifier: Modifier = Modifier,
+    photoIsSelfie: Boolean = false,
     onZoomed: (() -> Unit)? = null
 ) {
     val photoFile = photoPath?.takeIf { it.isNotBlank() }?.let { File(it) }
     var showZoom by remember { mutableStateOf(false) }
-    if (photoFile != null && photoFile.exists()) {
-        AsyncImage(
-            model = photoFile,
-            contentDescription = name,
-            contentScale = ContentScale.Crop,
-            modifier = modifier.size(size).clip(CircleShape).clickable { showZoom = true }
-        )
-        if (showZoom) {
-            ZoomablePhotoDialog(
-                photoFile = photoFile,
-                name = name,
-                onDismiss = { showZoom = false },
-                onOpened = onZoomed
+
+    Box(modifier = modifier.size(size)) {
+        if (photoFile != null && photoFile.exists()) {
+            AsyncImage(
+                model = photoFile,
+                contentDescription = name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().clip(CircleShape).clickable { showZoom = true }
             )
+            if (showZoom) {
+                ZoomablePhotoDialog(
+                    photoFile = photoFile,
+                    name = name,
+                    onDismiss = { showZoom = false },
+                    onOpened = onZoomed
+                )
+            }
+        } else {
+            InitialsAvatar(name = name, size = size)
         }
-    } else {
-        InitialsAvatar(name = name, size = size, modifier = modifier)
+
+        if (photoIsSelfie && photoFile?.exists() == true) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(size * 0.34f)
+                    .clip(CircleShape)
+                    .background(Color(0xFF10B981)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = "Selfie",
+                    tint = Color.White,
+                    modifier = Modifier.size(size * 0.20f)
+                )
+            }
+        }
     }
 }
 
