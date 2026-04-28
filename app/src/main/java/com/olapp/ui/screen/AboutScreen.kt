@@ -57,7 +57,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
             Text(
-                "About Waves",
+                "About Wave & Vibe",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -87,12 +87,12 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                     Text("👋", fontSize = 38.sp)
                 }
                 Text(
-                    "Waves",
+                    "Wave & Vibe",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Black
                 )
                 Text(
-                    "Meet people around you",
+                    "Make friends around you",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -104,18 +104,18 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 GradientLabel("Our mission")
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Dating must be free, private and fun.",
+                    "Making friends should be free, private and fun.",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 28.sp
                 )
                 Spacer(Modifier.height(12.dp))
                 AboutBody(
-                    "We built Waves because meeting people in real life shouldn't require a monthly subscription, an algorithm deciding who you deserve to see, or a company storing intimate details about your love life on their servers."
+                    "We built Wave & Vibe because meeting people in real life shouldn't require a monthly subscription, an algorithm deciding who you deserve to see, or a company storing details about your social life on their servers."
                 )
                 Spacer(Modifier.height(10.dp))
                 AboutBody(
-                    "The best connections happen in person — at a coffee shop, a concert, a park. Waves simply removes the awkwardness of that first move. You see someone nearby, you send a wave. If they wave back, you both know it's mutual. That's it. No swiping, no matches with strangers you'll never meet, no ghost profiles collected for advertising."
+                    "The best connections happen in person — at a coffee shop, a concert, a park. Wave & Vibe simply removes the awkwardness of that first move. You see someone nearby, you send a wave. If they wave back, you both know it's mutual. That's it. No swiping, no matches with strangers you'll never meet, no ghost profiles collected for advertising."
                 )
                 Spacer(Modifier.height(10.dp))
                 AboutBody(
@@ -133,7 +133,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 HowItWorksStep(
                     emoji = "📡",
                     title = "Your phone becomes a beacon",
-                    body = "When you open Waves, your phone starts broadcasting a short anonymous signal over Bluetooth and Wi-Fi — the same technology your phone already uses every day. People nearby running Waves receive your signal and appear in each other's Nearby list, usually within seconds to a couple of minutes."
+                    body = "When you open Wave & Vibe, your phone starts broadcasting a short anonymous signal over Bluetooth and Wi-Fi — the same technology your phone already uses every day. People nearby running Wave & Vibe receive your signal and appear in each other's Nearby list, usually within seconds to a couple of minutes."
                 )
                 AboutDivider()
                 HowItWorksStep(
@@ -145,13 +145,13 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 HowItWorksStep(
                     emoji = "✦",
                     title = "They wave back — it's a Vibe",
-                    body = "If they wave back, both of you are notified instantly. You both see each other's full profile — name, photo, bio, and the contact details you chose to share (Instagram, Twitter/X, email…). From that point on, the connection is yours — Waves steps out of the way."
+                    body = "If they wave back, both of you are notified instantly. You both see each other's full profile — name, photo, bio, and the contact details you chose to share (Instagram, Twitter/X, email…). From that point on, the connection is yours — Wave & Vibe steps out of the way."
                 )
                 AboutDivider()
                 HowItWorksStep(
                     emoji = "🔄",
-                    title = "No wave back? It stays private",
-                    body = "If the other person doesn't wave back, they never know you waved. There's no embarrassment, no awkward \"seen\" receipt. Unresponded waves disappear quietly."
+                    title = "No wave back? You'll never know",
+                    body = "If the other person doesn't wave back, you won't know whether they saw your wave — there's no \"seen\" receipt on your end. Unresponded waves expire quietly from your sent history."
                 )
             }
 
@@ -173,7 +173,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 PrivacyPill(
                     emoji = "📱",
                     title = "Everything stays on your device",
-                    body = "Your profile, your matches, your waves — all stored locally on your phone. There is no Waves server. There is no database with your name in it. We have no backend that could be hacked or subpoenaed."
+                    body = "Your profile, your matches, your waves — all stored locally on your phone. There is no Wave & Vibe server. There is no database with your name in it. We have no backend that could be hacked or subpoenaed."
                 )
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(
@@ -191,7 +191,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 PrivacyPill(
                     emoji = "🔑",
                     title = "Stable device identity, no account",
-                    body = "Your Waves ID is generated once when you first set up the app and never changes. It exists only on your device — there is no account, no login, and no server that maps your ID to your real identity."
+                    body = "Your Wave & Vibe ID is generated once when you first set up the app and never changes. It exists only on your device — there is no account, no login, and no server that maps your ID to your real identity."
                 )
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(
@@ -203,7 +203,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 PrivacyPill(
                     emoji = "🆓",
                     title = "Free. No ads. No tracking.",
-                    body = "Waves is free to download and use. We do not sell data, run ads, or track behaviour. We have no business model that depends on your personal information."
+                    body = "Wave & Vibe is free to download and use. We do not sell data, run ads, or track behaviour. We have no business model that depends on your personal information."
                 )
             }
 

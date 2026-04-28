@@ -303,6 +303,7 @@ private fun NearbyDeviceCard(
     onBlock: () -> Unit
 ) {
     var showBlockDialog by remember { mutableStateOf(false) }
+    var showProfile by remember { mutableStateOf(false) }
 
     if (showBlockDialog) {
         AlertDialog(
@@ -320,8 +321,23 @@ private fun NearbyDeviceCard(
         )
     }
 
+    if (showProfile) {
+        NearbyProfileDialog(
+            device = device,
+            onDismiss = { showProfile = false },
+            onPhotoZoomed = onPhotoZoomed,
+            onWave = { showProfile = false; onSendOla() },
+            onBlock = { showProfile = false; showBlockDialog = true }
+        )
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                enabled = !device.isPending,
+                onClick = { showProfile = true }
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -343,10 +359,11 @@ private fun NearbyDeviceCard(
                 )
                 Text(
                     when {
-                        device.isPending             -> "Connecting…"
+                        device.isPending                      -> "Connecting…"
                         device.status == WaveStatus.WAVE_SENT -> "Waiting for their wave…"
                         device.status == WaveStatus.MATCHED   -> "You're vibing"
-                        else -> device.description.ifEmpty { "Tap Wave to say hello" }
+                        device.description.isNotBlank()       -> device.description
+                        else                                  -> "Tap to see profile"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = when (device.status) {
@@ -377,6 +394,100 @@ private fun NearbyDeviceCard(
                 }
                 WaveStatus.WAVE_SENT -> StatusChip(text = "Waved ✓", tint = Indigo)
                 WaveStatus.MATCHED   -> StatusChip(text = "Vibing", tint = Brand)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NearbyProfileDialog(
+    device: NearbyDevice,
+    onDismiss: () -> Unit,
+    onPhotoZoomed: () -> Unit,
+    onWave: () -> Unit,
+    onBlock: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}  // absorb touches so they don't dismiss
+                    )
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Handle bar
+                Box(
+                    modifier = Modifier
+                        .size(width = 40.dp, height = 4.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+
+                PeerAvatar(device = device, size = 88.dp, onZoomed = onPhotoZoomed)
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        device.displayName,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (device.description.isNotBlank()) {
+                        Text(
+                            device.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                // Wave button
+                if (device.status == WaveStatus.NONE) {
+                    GradientButton(
+                        text = "👋  Wave",
+                        onClick = onWave,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    StatusChip(
+                        text = if (device.status == WaveStatus.WAVE_SENT) "Waved ✓" else "Vibing",
+                        tint = if (device.status == WaveStatus.WAVE_SENT) Indigo else Brand
+                    )
+                }
+
+                TextButton(onClick = onBlock) {
+                    Text(
+                        "Block ${device.displayName}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
             }
         }
     }

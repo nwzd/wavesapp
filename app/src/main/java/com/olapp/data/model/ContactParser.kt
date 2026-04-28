@@ -2,7 +2,12 @@ package com.olapp.data.model
 
 enum class ContactPlatform(val key: String, val label: String) {
     INSTAGRAM("ig", "Instagram"),
+    TIKTOK("tt", "TikTok"),
+    SNAPCHAT("sc", "Snapchat"),
+    FACEBOOK("fb", "Facebook"),
     TWITTER("tw", "Twitter / X"),
+    LINKEDIN("li", "LinkedIn"),
+    DISCORD("dc", "Discord"),
     EMAIL("em", "Email"),
     OTHER("ot", "Other")
 }
@@ -13,7 +18,6 @@ object ContactParser {
 
     fun parse(raw: String): List<ContactEntry> {
         if (raw.isBlank()) return emptyList()
-        // Structured format: "ig:@user|wa:+351123|tg:@user"
         if (raw.contains("|") || Regex("^[a-z]{2}:.+").containsMatchIn(raw)) {
             return raw.split("|").mapNotNull { part ->
                 val idx = part.indexOf(':')
@@ -25,7 +29,6 @@ object ContactParser {
                 ContactEntry(platform, value)
             }
         }
-        // Legacy plain string — guess platform
         return listOf(ContactEntry(guessPlatform(raw), raw))
     }
 
@@ -34,26 +37,30 @@ object ContactParser {
             .joinToString("|") { "${it.platform.key}:${it.value}" }
 
     fun intentUri(entry: ContactEntry): String? = when (entry.platform) {
-        ContactPlatform.INSTAGRAM -> {
-            val handle = entry.value.trimStart('@')
-            "https://instagram.com/$handle"
-        }
-        ContactPlatform.TWITTER -> {
-            val handle = entry.value.trimStart('@')
-            "https://x.com/$handle"
-        }
-        ContactPlatform.EMAIL -> "mailto:${entry.value}"
-        ContactPlatform.OTHER -> null
+        ContactPlatform.INSTAGRAM -> "https://instagram.com/${entry.value.trimStart('@')}"
+        ContactPlatform.TIKTOK    -> "https://tiktok.com/@${entry.value.trimStart('@')}"
+        ContactPlatform.SNAPCHAT  -> "https://snapchat.com/add/${entry.value.trimStart('@')}"
+        ContactPlatform.FACEBOOK  -> "https://facebook.com/${entry.value.trimStart('@')}"
+        ContactPlatform.TWITTER   -> "https://x.com/${entry.value.trimStart('@')}"
+        ContactPlatform.LINKEDIN  -> "https://linkedin.com/in/${entry.value.trimStart('@')}"
+        ContactPlatform.DISCORD   -> null
+        ContactPlatform.EMAIL     -> "mailto:${entry.value}"
+        ContactPlatform.OTHER     -> null
     }
 
     private fun guessPlatform(value: String): ContactPlatform {
         val lower = value.lowercase().trim()
         return when {
             lower.contains("instagram") || lower.contains("ig.me") -> ContactPlatform.INSTAGRAM
-            lower.contains("twitter") || lower.contains("x.com") -> ContactPlatform.TWITTER
-            lower.contains("@") && lower.contains(".") -> ContactPlatform.EMAIL
-            lower.startsWith("@") -> ContactPlatform.INSTAGRAM
-            else -> ContactPlatform.OTHER
+            lower.contains("tiktok")                               -> ContactPlatform.TIKTOK
+            lower.contains("snapchat") || lower.contains("snap")   -> ContactPlatform.SNAPCHAT
+            lower.contains("facebook") || lower.contains("fb.com") -> ContactPlatform.FACEBOOK
+            lower.contains("twitter") || lower.contains("x.com")   -> ContactPlatform.TWITTER
+            lower.contains("linkedin")                             -> ContactPlatform.LINKEDIN
+            lower.contains("discord")                              -> ContactPlatform.DISCORD
+            lower.contains("@") && lower.contains(".")             -> ContactPlatform.EMAIL
+            lower.startsWith("@")                                  -> ContactPlatform.INSTAGRAM
+            else                                                   -> ContactPlatform.OTHER
         }
     }
 }

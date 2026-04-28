@@ -47,13 +47,13 @@ private data class TutorialPage(val emoji: String, val title: String, val body: 
 private val tutorialPages = listOf(
     TutorialPage(
         emoji = "👋",
-        title = "Welcome to Waves",
+        title = "Welcome to Wave & Vibe",
         body = "Meet people physically around you — no endless swiping, no algorithms. Just real connections with people in the same place."
     ),
     TutorialPage(
         emoji = "📡",
         title = "Discover nearby people",
-        body = "Waves scans using Bluetooth and Wi-Fi. Anyone with the app open nearby appears on your screen. No account needed to get started."
+        body = "Wave & Vibe scans using Bluetooth and Wi-Fi. Anyone with the app open nearby appears on your screen. No account needed to get started."
     ),
     TutorialPage(
         emoji = "✦",

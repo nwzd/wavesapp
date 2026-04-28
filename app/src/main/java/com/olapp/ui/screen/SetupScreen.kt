@@ -122,7 +122,12 @@ fun SetupScreen(
     var discoveryEnabled by remember(existingDiscoverable) { mutableStateOf(existingDiscoverable) }
 
     var igHandle  by remember { mutableStateOf("") }
+    var ttHandle  by remember { mutableStateOf("") }
+    var scHandle  by remember { mutableStateOf("") }
+    var fbHandle  by remember { mutableStateOf("") }
     var twHandle  by remember { mutableStateOf("") }
+    var liHandle  by remember { mutableStateOf("") }
+    var dcHandle  by remember { mutableStateOf("") }
     var emAddress by remember { mutableStateOf("") }
 
     LaunchedEffect(existingContact) {
@@ -130,7 +135,12 @@ fun SetupScreen(
         ContactParser.parse(existingContact).forEach { entry ->
             when (entry.platform) {
                 ContactPlatform.INSTAGRAM -> igHandle  = entry.value
+                ContactPlatform.TIKTOK    -> ttHandle  = entry.value
+                ContactPlatform.SNAPCHAT  -> scHandle  = entry.value
+                ContactPlatform.FACEBOOK  -> fbHandle  = entry.value
                 ContactPlatform.TWITTER   -> twHandle  = entry.value
+                ContactPlatform.LINKEDIN  -> liHandle  = entry.value
+                ContactPlatform.DISCORD   -> dcHandle  = entry.value
                 ContactPlatform.EMAIL     -> emAddress = entry.value
                 ContactPlatform.OTHER     -> if (igHandle.isBlank()) igHandle = entry.value
             }
@@ -360,10 +370,46 @@ fun SetupScreen(
             )
         }
 
+        // Phone-number advisory
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Text("💡", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "We recommend using social handles rather than a phone number. Because Wave & Vibe is peer-to-peer — no server involved — once your contact info is shared after a vibe, it cannot be recalled. A username is easier to manage if you ever change your mind.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
         PlatformField(
             platform = ContactPlatform.INSTAGRAM, label = "Instagram",
             placeholder = "@yourhandle",
             value = igHandle, onValueChange = { igHandle = it },
+            fieldColors = fieldColors
+        )
+        PlatformField(
+            platform = ContactPlatform.TIKTOK, label = "TikTok",
+            placeholder = "@yourhandle",
+            value = ttHandle, onValueChange = { ttHandle = it },
+            fieldColors = fieldColors
+        )
+        PlatformField(
+            platform = ContactPlatform.SNAPCHAT, label = "Snapchat",
+            placeholder = "yourname",
+            value = scHandle, onValueChange = { scHandle = it },
+            fieldColors = fieldColors
+        )
+        PlatformField(
+            platform = ContactPlatform.FACEBOOK, label = "Facebook",
+            placeholder = "your.name",
+            value = fbHandle, onValueChange = { fbHandle = it },
             fieldColors = fieldColors
         )
         PlatformField(
@@ -373,7 +419,19 @@ fun SetupScreen(
             fieldColors = fieldColors
         )
         PlatformField(
-            platform = ContactPlatform.EMAIL, label = "Email (optional)",
+            platform = ContactPlatform.LINKEDIN, label = "LinkedIn",
+            placeholder = "yourname",
+            value = liHandle, onValueChange = { liHandle = it },
+            fieldColors = fieldColors
+        )
+        PlatformField(
+            platform = ContactPlatform.DISCORD, label = "Discord",
+            placeholder = "username",
+            value = dcHandle, onValueChange = { dcHandle = it },
+            fieldColors = fieldColors
+        )
+        PlatformField(
+            platform = ContactPlatform.EMAIL, label = "Email",
             placeholder = "you@example.com",
             value = emAddress, onValueChange = { emAddress = it },
             fieldColors = fieldColors
@@ -411,7 +469,12 @@ fun SetupScreen(
             onClick = {
                 val combinedContact = ContactParser.format(buildList {
                     if (igHandle.isNotBlank())  add(ContactEntry(ContactPlatform.INSTAGRAM, igHandle.trim()))
+                    if (ttHandle.isNotBlank())  add(ContactEntry(ContactPlatform.TIKTOK,    ttHandle.trim()))
+                    if (scHandle.isNotBlank())  add(ContactEntry(ContactPlatform.SNAPCHAT,  scHandle.trim()))
+                    if (fbHandle.isNotBlank())  add(ContactEntry(ContactPlatform.FACEBOOK,  fbHandle.trim()))
                     if (twHandle.isNotBlank())  add(ContactEntry(ContactPlatform.TWITTER,   twHandle.trim()))
+                    if (liHandle.isNotBlank())  add(ContactEntry(ContactPlatform.LINKEDIN,  liHandle.trim()))
+                    if (dcHandle.isNotBlank())  add(ContactEntry(ContactPlatform.DISCORD,   dcHandle.trim()))
                     if (emAddress.isNotBlank()) add(ContactEntry(ContactPlatform.EMAIL,     emAddress.trim()))
                 })
                 viewModel.save(displayName, combinedContact, description, discoveryEnabled, selectedDobMillis)

@@ -110,10 +110,20 @@ class OlaViewModel @Inject constructor(
         }
     }
 
+    fun deleteReceivedOlas(ids: List<String>) {
+        viewModelScope.launch { ids.forEach { userRepository.deleteReceivedOla(it) } }
+    }
+
+    fun deleteSentOlas(ids: List<String>) {
+        viewModelScope.launch { ids.forEach { userRepository.deleteSentOla(it) } }
+    }
+
     fun deleteMatch(matchId: String, otherBleToken: String) {
-        viewModelScope.launch {
-            userRepository.deleteMatch(matchId, otherBleToken)
-        }
+        viewModelScope.launch { userRepository.deleteMatch(matchId, otherBleToken) }
+    }
+
+    fun deleteMatches(targets: List<Match>) {
+        viewModelScope.launch { targets.forEach { userRepository.deleteMatch(it.id, it.otherBleToken) } }
     }
 
     fun blockUser(token: String, displayName: String) {
