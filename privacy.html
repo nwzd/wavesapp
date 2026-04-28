@@ -226,9 +226,11 @@
       <h2>4. How waving works</h2>
       <p>When you wave at someone:</p>
       <ul>
-        <li>A notification is sent to the other person's device via the existing peer-to-peer connection, containing only the fact that "someone nearby waved" — your identity is not included at this stage.</li>
-        <li>If the other person waves back, both devices exchange full profiles directly over the peer-to-peer link. This includes the contact details each party chose to share.</li>
-        <li>If the other person does not wave back, they never learn your identity. The wave record exists only on your own device.</li>
+        <li>A wave message is sent to the other person's device via the existing peer-to-peer connection. This message contains your display name and wave identifier so the recipient knows who waved at them. Their device shows a notification such as <em>"[Your name] sent you a wave."</em></li>
+        <li>Your full profile (photo, bio, contact info) is <strong>not</strong> transmitted at this stage. Contact details are withheld until a wave is mutual.</li>
+        <li>If the other person waves back, both devices exchange full profiles directly over the peer-to-peer link, including the contact details each party chose to share. This exchange happens only between the two devices involved.</li>
+        <li>If the other person does not wave back, your contact details are never shared with them. The wave record exists on both devices (yours as a sent wave, theirs as a received wave), but you will not receive any "seen" confirmation — unreciprocated waves simply expire from your sent history.</li>
+        <li><strong>Irrevocability of transmitted data.</strong> Because there is no server, data transmitted during a mutual wave (your display name at the wave stage, or your full profile at the match stage) exists on the recipient's device and cannot be remotely deleted or recalled by us or by you after the fact.</li>
       </ul>
     </div>
 
@@ -270,7 +272,9 @@
 
     <div class="policy-section">
       <h2>8. Children and age verification</h2>
-      <p>Waves is not intended for use by anyone under the age of 18. On first setup, users must enter their date of birth; anyone under 18 is prevented from creating a profile. This date of birth is stored only on the device and is never transmitted. Because all data is stored locally, we cannot enforce this at a server level beyond first setup — we also rely on platform (Google Play) age gates and parental controls.</p>
+      <p><strong>Waves does not contain adult content.</strong> The 18+ minimum age requirement exists solely to protect children from unsolicited contact with adults — not because the app is intended for adult content or restricted activities.</p>
+      <p>On first setup, users must enter their date of birth; anyone under 18 is blocked from creating a profile. This date of birth is stored only on the device and is never transmitted to us or any third party. We additionally rely on platform-level controls (Google Play family policies and parental controls) to reinforce this protection.</p>
+      <p>If you believe a minor is using Waves, please contact us immediately via our contact form. Because all data is stored locally on devices, we have no server-side mechanism to remove a specific account; we encourage parents to use device-level parental controls and to uninstall the app from a minor's device.</p>
     </div>
 
     <div class="policy-section">

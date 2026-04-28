@@ -1,9 +1,8 @@
 package com.olapp.ui.screen
 
-import android.content.Intent
-import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,14 +20,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,12 +55,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.olapp.data.model.Match
 import com.olapp.data.model.ReceivedOla
 import com.olapp.data.model.SentOla
 import com.olapp.ui.theme.Brand
@@ -69,9 +68,8 @@ import com.olapp.ui.viewmodel.OlaViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
     val receivedOlas by viewModel.receivedOlas.collectAsState()
@@ -79,6 +77,30 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedReceived by remember { mutableStateOf<ReceivedOla?>(null) }
     var selectedSent by remember { mutableStateOf<SentOla?>(null) }
+
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<String>()) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedTab) {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+
+    val currentIds = when (selectedTab) {
+        0 -> receivedOlas.map { it.id }
+        else -> sentOlas.map { it.id }
+    }
+    val allSelected = currentIds.isNotEmpty() && selectedIds.containsAll(currentIds.toSet())
+
+    fun enterSelection(id: String) {
+        selectionMode = true
+        selectedIds = setOf(id)
+    }
+
+    fun toggleId(id: String) {
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+    }
 
     val headerSub = when {
         receivedOlas.isNotEmpty() ->
@@ -88,17 +110,73 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
         else -> "Wave at someone nearby to start"
     }
 
+    if (showDeleteConfirm) {
+        val n = selectedIds.size
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete $n wave${if (n > 1) "s" else ""}?") },
+            text = { Text("Since there's no server, the other person's copy is unaffected.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    if (selectedTab == 0) viewModel.deleteReceivedOlas(selectedIds.toList())
+                    else viewModel.deleteSentOlas(selectedIds.toList())
+                    selectionMode = false
+                    selectedIds = emptySet()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-            Text("Waves", style = MaterialTheme.typography.headlineMedium)
-            Text(
-                headerSub,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (receivedOlas.isNotEmpty()) Brand
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        if (selectionMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { selectionMode = false; selectedIds = emptySet() }) {
+                    Icon(Icons.Default.Close, contentDescription = "Cancel")
+                }
+                Text(
+                    "${selectedIds.size} selected",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                TextButton(onClick = {
+                    selectedIds = if (allSelected) emptySet() else currentIds.toSet()
+                }) {
+                    Text(if (allSelected) "Deselect all" else "Select all")
+                }
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    enabled = selectedIds.isNotEmpty()
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete selected",
+                        tint = if (selectedIds.isNotEmpty()) MaterialTheme.colorScheme.error
+                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                    )
+                }
+            }
+        } else {
+            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+                Text("Waves", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    headerSub,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (receivedOlas.isNotEmpty()) Brand
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         TabRow(
@@ -143,11 +221,15 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
                 items(receivedOlas, key = { it.id }) { ola ->
                     ReceivedWaveCard(
                         ola = ola,
-                        onOpen = { selectedReceived = ola },
+                        selectionMode = selectionMode,
+                        isSelected = ola.id in selectedIds,
+                        onOpen = { if (!selectionMode) selectedReceived = ola },
                         onWaveBack = {
                             viewModel.respondToOla(ola.senderBleToken)
                             selectedReceived = null
-                        }
+                        },
+                        onSelect = { toggleId(ola.id) },
+                        onLongPress = { enterSelection(ola.id) }
                     )
                 }
             }
@@ -157,39 +239,48 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
                 emptySub = "Go to Nearby, spot someone, and tap Wave. If they wave back you'll both appear in Vibes and exchange contact info."
             ) {
                 items(sentOlas, key = { it.id }) { ola ->
-                    SentWaveCard(ola) { selectedSent = ola }
+                    SentWaveCard(
+                        ola = ola,
+                        selectionMode = selectionMode,
+                        isSelected = ola.id in selectedIds,
+                        onClick = { if (!selectionMode) selectedSent = ola },
+                        onSelect = { toggleId(ola.id) },
+                        onLongPress = { enterSelection(ola.id) }
+                    )
                 }
             }
         }
     }
 
-    selectedReceived?.let { ola ->
-        WaveDetailSheet(
-            name = ola.senderDisplayName.ifEmpty { "Someone nearby" },
-            photoPath = ola.senderPhotoUrl,
-            timestamp = ola.timestamp,
-            isReceived = true,
-            onRespond = {
-                viewModel.respondToOla(ola.senderBleToken)
-                selectedReceived = null
-            },
-            onBlock = {
-                viewModel.blockUser(ola.senderBleToken, ola.senderDisplayName)
-                selectedReceived = null
-            },
-            onDismiss = { selectedReceived = null }
-        )
-    }
-    selectedSent?.let { ola ->
-        WaveDetailSheet(
-            name = ola.receiverDisplayName.ifEmpty { "Someone nearby" },
-            photoPath = ola.receiverPhotoUrl,
-            timestamp = ola.timestamp,
-            isReceived = false,
-            onRespond = {},
-            onBlock = null,
-            onDismiss = { selectedSent = null }
-        )
+    if (!selectionMode) {
+        selectedReceived?.let { ola ->
+            WaveDetailSheet(
+                name = ola.senderDisplayName.ifEmpty { "Someone nearby" },
+                photoPath = ola.senderPhotoUrl,
+                timestamp = ola.timestamp,
+                isReceived = true,
+                onRespond = {
+                    viewModel.respondToOla(ola.senderBleToken)
+                    selectedReceived = null
+                },
+                onBlock = {
+                    viewModel.blockUser(ola.senderBleToken, ola.senderDisplayName)
+                    selectedReceived = null
+                },
+                onDismiss = { selectedReceived = null }
+            )
+        }
+        selectedSent?.let { ola ->
+            WaveDetailSheet(
+                name = ola.receiverDisplayName.ifEmpty { "Someone nearby" },
+                photoPath = ola.receiverPhotoUrl,
+                timestamp = ola.timestamp,
+                isReceived = false,
+                onRespond = {},
+                onBlock = null,
+                onDismiss = { selectedSent = null }
+            )
+        }
     }
 }
 
@@ -232,13 +323,25 @@ private fun WaveList(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ReceivedWaveCard(ola: ReceivedOla, onOpen: () -> Unit, onWaveBack: () -> Unit) {
+private fun ReceivedWaveCard(
+    ola: ReceivedOla,
+    selectionMode: Boolean,
+    isSelected: Boolean,
+    onOpen: () -> Unit,
+    onWaveBack: () -> Unit,
+    onSelect: () -> Unit,
+    onLongPress: () -> Unit
+) {
     val fmt = remember { SimpleDateFormat("HH:mm · d MMM", Locale.getDefault()) }
     val name = ola.senderDisplayName.ifEmpty { "Someone nearby" }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
+        modifier = Modifier.fillMaxWidth().combinedClickable(
+            onClick = if (selectionMode) onSelect else onOpen,
+            onLongClick = onLongPress
+        ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -255,8 +358,10 @@ private fun ReceivedWaveCard(ola: ReceivedOla, onOpen: () -> Unit, onWaveBack: (
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (selectionMode) {
+                    Checkbox(checked = isSelected, onCheckedChange = { onSelect() })
+                }
                 ProfileAvatar(photoPath = ola.senderPhotoUrl, name = name, size = 48.dp)
-
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(
@@ -265,20 +370,32 @@ private fun ReceivedWaveCard(ola: ReceivedOla, onOpen: () -> Unit, onWaveBack: (
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                GradientButton(text = "Wave back", onClick = onWaveBack)
+                if (!selectionMode) {
+                    GradientButton(text = "Wave back", onClick = onWaveBack)
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SentWaveCard(ola: SentOla, onClick: () -> Unit) {
+private fun SentWaveCard(
+    ola: SentOla,
+    selectionMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onSelect: () -> Unit,
+    onLongPress: () -> Unit
+) {
     val fmt = remember { SimpleDateFormat("HH:mm · d MMM", Locale.getDefault()) }
     val name = ola.receiverDisplayName.ifEmpty { "Someone nearby" }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().combinedClickable(
+            onClick = if (selectionMode) onSelect else onClick,
+            onLongClick = onLongPress
+        ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -288,8 +405,10 @@ private fun SentWaveCard(ola: SentOla, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (selectionMode) {
+                Checkbox(checked = isSelected, onCheckedChange = { onSelect() })
+            }
             ProfileAvatar(photoPath = ola.receiverPhotoUrl, name = name, size = 48.dp)
-
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Row(
@@ -304,7 +423,6 @@ private fun SentWaveCard(ola: SentOla, onClick: () -> Unit) {
                     )
                 }
             }
-
             Box(
                 modifier = Modifier.clip(RoundedCornerShape(50.dp))
                     .background(Indigo.copy(alpha = 0.10f))
@@ -349,19 +467,13 @@ private fun WaveDetailSheet(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             ProfileAvatar(photoPath = photoPath, name = name, size = 80.dp)
-
             Spacer(Modifier.height(16.dp))
-
             Text(name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-
             Spacer(Modifier.height(6.dp))
-
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50.dp))
-                    .background(
-                        (if (isReceived) Brand else Indigo).copy(alpha = 0.1f)
-                    )
+                    .background((if (isReceived) Brand else Indigo).copy(alpha = 0.1f))
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Text(
@@ -371,9 +483,7 @@ private fun WaveDetailSheet(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-
             Spacer(Modifier.height(24.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -391,7 +501,6 @@ private fun WaveDetailSheet(
                     Text(dateFmt.format(Date(timestamp)), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                 }
             }
-
             if (isReceived) {
                 Spacer(Modifier.height(16.dp))
                 Text(

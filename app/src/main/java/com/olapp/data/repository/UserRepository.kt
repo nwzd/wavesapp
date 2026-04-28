@@ -192,6 +192,10 @@ class UserRepository @Inject constructor(
         sentOlaDao.deleteOlderThan(cutoff)
     }
 
+    suspend fun deleteReceivedOla(id: String) = receivedOlaDao.deleteById(id)
+
+    suspend fun deleteSentOla(id: String) = sentOlaDao.deleteById(id)
+
     suspend fun deleteMatch(matchId: String, otherBleToken: String) {
         matchDao.deleteById(matchId)
         receivedOlaDao.deleteByBleToken(otherBleToken)

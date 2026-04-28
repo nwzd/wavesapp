@@ -41,9 +41,9 @@ private const val NOTIF_ID = 1001
 private const val NOTIF_ID_NEARBY = 1002   // single aggregated nearby notification
 private const val NOTIF_ID_OLA_BASE   = 2000
 private const val NOTIF_ID_MATCH_BASE = 3000
-private const val EVICT_INTERVAL_MS          = 5 * 60 * 1000L
-private const val RECEIVED_OLA_TTL_MS        = 2 * 60 * 60 * 1000L
-private const val SENT_OLA_TTL_MS            = 8 * 60 * 60 * 1000L
+private const val EVICT_INTERVAL_MS          = 60 * 60 * 1000L
+private const val RECEIVED_OLA_TTL_MS        = 30L * 24 * 60 * 60 * 1000L
+private const val SENT_OLA_TTL_MS            = 30L * 24 * 60 * 60 * 1000L
 private const val SERVICE_CHANNEL = "ola_ble"
 private const val OLA_CHANNEL = "ola_received"
 private const val MATCH_CHANNEL = "ola_match"
@@ -72,9 +72,9 @@ class BleForegroundService : Service() {
     private var matchConfirmJob: Job? = null
     private var blockReceivedJob: Job? = null
 
-    private val notifiedOlaTokens    = HashSet<String>()
-    private val notifiedMatchTokens  = HashSet<String>()
-    private val notifiedNearbyTokens = HashSet<String>()
+    private val notifiedOlaTokens    = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    private val notifiedMatchTokens  = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    private val notifiedNearbyTokens = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
     private var nearbyNotifShownThisSession = false
 
     private val bluetoothReceiver = object : BroadcastReceiver() {
@@ -119,8 +119,17 @@ class BleForegroundService : Service() {
         }
 
         matchJob = scope.launch {
+            var prevTokens = emptySet<String>()
             userRepository.observeMatches().collect { matches ->
-                nearbyManager.matchedTokens = matches.map { it.otherBleToken }.toHashSet()
+                val current = matches.map { it.otherBleToken }.toHashSet()
+                nearbyManager.matchedTokens = current
+                // When a vibe is deleted, allow re-notification if they vibe again
+                val removed = prevTokens - current
+                if (removed.isNotEmpty()) {
+                    notifiedMatchTokens.removeAll(removed)
+                    notifiedOlaTokens.removeAll(removed)
+                }
+                prevTokens = current
             }
         }
 
@@ -187,9 +196,11 @@ class BleForegroundService : Service() {
                         latitude = location?.first,
                         longitude = location?.second
                     )
-                    if (notifiedMatchTokens.add(data.token)) showMatchNotification(data.token, data.displayName)
                     Log.d(TAG, "Match created via confirmation from ${data.displayName}")
                 }
+                // Notify regardless of who created the match — covers the case where the
+                // local side already created it (wave-back initiator) but still needs a ping.
+                if (notifiedMatchTokens.add(data.token)) showMatchNotification(data.token, data.displayName)
             }
         }
 
@@ -306,7 +317,7 @@ class BleForegroundService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(BRAND_COLOR)
             .setContentTitle("It's a vibe with $name")
-            .setContentText("You both waved — open Waves to connect")
+            .setContentText("You both waved — open Wave & Vibe to connect")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(mainActivityIntent(notifId))
@@ -322,7 +333,7 @@ class BleForegroundService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(BRAND_COLOR)
             .setContentTitle("$name sent you a wave")
-            .setContentText("Open Waves to wave back")
+            .setContentText("Open Wave & Vibe to wave back")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(mainActivityIntent(notifId))
@@ -380,7 +391,7 @@ class BleForegroundService : Service() {
         if (!hasNotifPermission()) return
         val name = firstName.ifBlank { "Someone" }
         val title = if (totalSeen == 1) "$name is nearby" else "$totalSeen people nearby"
-        val text  = "Open Waves to say hello"
+        val text  = "Open Wave & Vibe to say hello"
         val notif = NotificationCompat.Builder(this, NEARBY_CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(BRAND_COLOR)

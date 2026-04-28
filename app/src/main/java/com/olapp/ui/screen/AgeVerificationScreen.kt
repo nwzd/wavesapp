@@ -77,7 +77,7 @@ fun AgeVerificationScreen(onVerified: () -> Unit) {
             Spacer(Modifier.height(36.dp))
 
             Text(
-                "Waves",
+                "Wave & Vibe",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Black,

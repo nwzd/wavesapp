@@ -60,7 +60,7 @@ fun RestrictedScreen(onContact: () -> Unit) {
         Spacer(Modifier.height(16.dp))
 
         Text(
-            "Multiple users reported this account for inappropriate behaviour. Access to Waves has been suspended.",
+            "Multiple users reported this account for inappropriate behaviour. Access to Wave & Vibe has been suspended.",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.65f),
             textAlign = TextAlign.Center,

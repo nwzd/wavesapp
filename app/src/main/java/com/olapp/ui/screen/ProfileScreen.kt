@@ -64,7 +64,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirm = false },
             title = { Text("Start fresh?") },
-            text = { Text("This deletes all your vibes, sent waves, and received waves. Your profile stays intact.") },
+            text = { Text("This clears your vibes, sent waves, and received waves. Your profile stays intact.\n\nSince there's no server, people you've already vibed with can still see your contact info on their device. Blocked contacts are not affected.") },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearAll(); showClearConfirm = false }) {
                     Text("Clear all", color = MaterialTheme.colorScheme.error)
@@ -174,7 +174,7 @@ fun ProfileScreen(
             )
             ProfileInfoRow(
                 icon = Icons.Default.Person,
-                label = "Waves ID",
+                label = "Wave & Vibe ID",
                 value = profile?.bleToken?.take(8)?.let { "$it…" } ?: "—",
                 iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                 note = "Your permanent device identifier"
@@ -206,7 +206,7 @@ fun ProfileScreen(
                     Icon(Icons.Default.Info, null, Modifier.size(20.dp), Brand)
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("About Waves", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("About Wave & Vibe", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text("Our mission, how it works & privacy", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Icon(

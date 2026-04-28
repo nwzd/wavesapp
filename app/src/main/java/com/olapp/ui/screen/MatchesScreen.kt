@@ -9,17 +9,17 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,10 +27,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,46 +68,117 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
     val matches by viewModel.matches.collectAsState()
     val count = matches.size
 
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<String>()) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val allSelected = matches.isNotEmpty() && selectedIds.containsAll(matches.map { it.id }.toSet())
+
+    fun enterSelection(id: String) {
+        selectionMode = true
+        selectedIds = setOf(id)
+    }
+
+    fun toggleId(id: String) {
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+    }
+
+    if (showDeleteConfirm) {
+        val n = selectedIds.size
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Remove $n vibe${if (n > 1) "s" else ""}?") },
+            text = { Text("Since there's no server, the other person's vibe is unaffected.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.deleteMatches(matches.filter { it.id in selectedIds })
+                    selectionMode = false
+                    selectedIds = emptySet()
+                }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text("Vibes", style = MaterialTheme.typography.headlineMedium)
+        if (selectionMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { selectionMode = false; selectedIds = emptySet() }) {
+                    Icon(Icons.Default.Close, contentDescription = "Cancel")
+                }
                 Text(
-                    when (count) {
-                        0    -> "People on your wavelength"
-                        1    -> "1 connection made ✦"
-                        else -> "$count connections made ✦"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (count > 0) Brand else MaterialTheme.colorScheme.onSurfaceVariant
+                    "${selectedIds.size} selected",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
-            }
-            if (count > 0) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(LogoGradient))
+                TextButton(onClick = {
+                    selectedIds = if (allSelected) emptySet() else matches.map { it.id }.toSet()
+                }) {
+                    Text(if (allSelected) "Deselect all" else "Select all")
+                }
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    enabled = selectedIds.isNotEmpty()
                 ) {
-                    Text(
-                        if (count > 99) "99+" else count.toString(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete selected",
+                        tint = if (selectedIds.isNotEmpty()) MaterialTheme.colorScheme.error
+                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                     )
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("Vibes", style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        when (count) {
+                            0    -> "People on your wavelength"
+                            1    -> "1 connection made ✦"
+                            else -> "$count connections made ✦"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (count > 0) Brand else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (count > 0) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(LogoGradient))
+                    ) {
+                        Text(
+                            if (count > 99) "99+" else count.toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -119,7 +193,10 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
                 items(matches, key = { it.id }) { match ->
                     MatchCard(
                         match = match,
-                        onDelete = { viewModel.deleteMatch(match.id, match.otherBleToken) }
+                        selectionMode = selectionMode,
+                        isSelected = match.id in selectedIds,
+                        onSelect = { toggleId(match.id) },
+                        onLongPress = { enterSelection(match.id) }
                     )
                 }
             }
@@ -167,11 +244,17 @@ private fun VibesEmptyState() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MatchCard(match: Match, onDelete: () -> Unit) {
+private fun MatchCard(
+    match: Match,
+    selectionMode: Boolean,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onLongPress: () -> Unit
+) {
     val context = LocalContext.current
     val name = match.otherDisplayName.ifEmpty { "Anonymous" }
-
     val lat = match.latitude
     val lon = match.longitude
     val contactEntries = remember(match.otherContactInfo) {
@@ -179,7 +262,10 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().combinedClickable(
+            onClick = if (selectionMode) onSelect else { {} },
+            onLongClick = onLongPress
+        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -189,11 +275,14 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header: avatar + name/time + action buttons
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (selectionMode) {
+                    Checkbox(checked = isSelected, onCheckedChange = { onSelect() })
+                }
+
                 val dotScale by rememberInfiniteTransition(label = "dot").animateFloat(
                     0.8f, 1.2f,
                     infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
@@ -225,17 +314,8 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Default.Delete, "Remove",
-                        modifier = Modifier.size(15.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
-                    )
-                }
             }
 
-            // Contact chips
             if (contactEntries.isNotEmpty()) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -250,7 +330,6 @@ private fun MatchCard(match: Match, onDelete: () -> Unit) {
                 }
             }
 
-            // Location row — no coordinates text, just a "Met nearby" label + Map button
             if (lat != null && lon != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

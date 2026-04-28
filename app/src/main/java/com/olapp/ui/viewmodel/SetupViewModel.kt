@@ -126,7 +126,7 @@ class SetupViewModel @Inject constructor(
             }
             val dob = Instant.ofEpochMilli(dateOfBirthMillis).atZone(ZoneOffset.UTC).toLocalDate()
             if (Period.between(dob, LocalDate.now()).years < 18) {
-                _error.value = "You must be 18 or older to use Waves."
+                _error.value = "You must be 18 or older to use Wave & Vibe."
                 return
             }
         }
