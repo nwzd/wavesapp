@@ -53,7 +53,7 @@ private val tutorialPages = listOf(
     TutorialPage(
         emoji = "📡",
         title = "Discover nearby people",
-        body = "Wave & Vibe scans using Bluetooth and Wi-Fi. Anyone with the app open nearby appears on your screen. No account needed to get started."
+        body = "Wave & Vibe scans using Bluetooth. Anyone with the app open nearby appears on your screen. Keep Bluetooth and Wi-Fi on — no internet needed, just the radios."
     ),
     TutorialPage(
         emoji = "✦",

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.olapp"
+    package="me.waveandvibe.app"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -41,10 +41,10 @@
         android:required="true" />
 
     <permission
-        android:name="com.olapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="me.waveandvibe.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.olapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="me.waveandvibe.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 
     <application
         android:name="com.olapp.OlaApplication"
@@ -83,7 +83,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.olapp.fileprovider"
+            android:authorities="me.waveandvibe.app.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true" >
             <meta-data
@@ -118,7 +118,7 @@
 
         <provider
             android:name="com.google.mlkit.common.internal.MlKitInitProvider"
-            android:authorities="com.olapp.mlkitinitprovider"
+            android:authorities="me.waveandvibe.app.mlkitinitprovider"
             android:exported="false"
             android:initOrder="99" />
 
@@ -141,7 +141,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.olapp.androidx-startup"
+            android:authorities="me.waveandvibe.app.androidx-startup"
             android:exported="false" >
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"

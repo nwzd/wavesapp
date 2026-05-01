@@ -20,8 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -167,7 +167,7 @@ fun ProfileScreen(
         ) {
             ContactInfoRow(rawContact = profile?.contactInfo ?: "")
             ProfileInfoRow(
-                icon = Icons.Default.Wifi,
+                icon = Icons.Default.Bluetooth,
                 label = "Discovery",
                 value = if (profile?.discoveryEnabled == true) "Visible to nearby people" else "Hidden",
                 iconTint = if (profile?.discoveryEnabled == true) Brand else MaterialTheme.colorScheme.onSurfaceVariant

@@ -82,7 +82,7 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                 TermsSection("1. The Service") {
                     "Wave & Vibe (\"App\") is a proximity-based social discovery application that enables " +
                     "users physically near each other to exchange expressions of interest (\"Waves\") " +
-                    "using Bluetooth and Wi-Fi via the Google Nearby Connections API. The App " +
+                    "using Bluetooth via the Google Nearby Connections API. The App " +
                     "operates without any server infrastructure maintained by us. All profile data, " +
                     "wave history, and connection records are stored exclusively on your local device. " +
                     "Profile data is transmitted directly between devices at the time a mutual Wave " +
@@ -141,12 +141,18 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                     "(a) We do not screen, verify, background-check, or endorse any user;\n" +
                     "(b) You are solely responsible for your safety and the decisions you make " +
                     "when interacting with other users;\n" +
-                    "(c) You should meet new contacts in public places and inform someone you trust;\n" +
+                    "(c) If you choose to meet anyone you connected with through the App in person, " +
+                    "exercise appropriate caution as you would with any stranger;\n" +
                     "(d) We cannot guarantee that any user is who they claim to be or will behave " +
                     "appropriately.\n\n" +
                     "We are not liable for any harm, injury, loss, or damage — whether physical, " +
                     "emotional, financial, or otherwise — arising from interactions between users, " +
-                    "whether or not those interactions were facilitated by the App."
+                    "whether or not those interactions were facilitated by the App.\n\n" +
+                    "If you experience harassment, threats, or any behaviour that makes you feel " +
+                    "unsafe, please contact your local emergency services or police immediately. " +
+                    "You can also block the user instantly within the App. We take reports of " +
+                    "serious misuse seriously and will cooperate fully with law enforcement " +
+                    "investigations where required by applicable law."
                 }
 
                 TermsDivider()
@@ -186,9 +192,9 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                     "FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, OR UNINTERRUPTED OR " +
                     "ERROR-FREE OPERATION. WE DO NOT WARRANT THAT THE APP WILL DISCOVER NEARBY " +
                     "USERS, THAT WAVE DELIVERY WILL BE RELIABLE OR TIMELY, OR THAT THE APP WILL " +
-                    "OPERATE WITHOUT DEFECT OR INTERRUPTION. DISCOVERY DEPENDS ON BLUETOOTH AND " +
-                    "WI-FI AVAILABILITY, ANDROID SYSTEM PERMISSIONS, PHYSICAL PROXIMITY, NETWORK " +
-                    "CONDITIONS, AND OTHER FACTORS ENTIRELY OUTSIDE OUR CONTROL."
+                    "OPERATE WITHOUT DEFECT OR INTERRUPTION. DISCOVERY REQUIRES BOTH BLUETOOTH AND " +
+                    "WI-FI TO BE ENABLED (NO INTERNET REQUIRED) AND DEPENDS ON ANDROID SYSTEM " +
+                    "PERMISSIONS, PHYSICAL PROXIMITY, AND OTHER FACTORS ENTIRELY OUTSIDE OUR CONTROL."
                 }
 
                 TermsDivider()
@@ -254,11 +260,15 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                 TermsDivider()
 
                 TermsSection("14. Governing Law and Disputes") {
-                    "These Terms are governed by and construed in accordance with the laws of " +
-                    "[Jurisdiction], without regard to conflict-of-law principles. Before initiating " +
-                    "any formal legal proceeding, you agree to first contact us to attempt informal " +
-                    "resolution. Any dispute not resolved informally within 30 days shall be subject " +
-                    "to the exclusive jurisdiction of the courts of [Jurisdiction]."
+                    "These Terms are governed by and construed in accordance with the laws of Spain. " +
+                    "If you are a consumer residing in the European Union, the mandatory consumer " +
+                    "protection provisions of your country of residence also apply, and nothing in " +
+                    "these Terms limits your rights under those provisions.\n\n" +
+                    "Before initiating any formal legal proceeding, you agree to first contact us to " +
+                    "attempt informal resolution. Any dispute not resolved informally within 30 days " +
+                    "shall be subject to the non-exclusive jurisdiction of the courts of Spain. " +
+                    "Consumers residing in the EU may also bring proceedings before the competent " +
+                    "courts of their country of residence."
                 }
 
                 TermsDivider()
@@ -325,10 +335,13 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
                 TermsDivider()
 
                 TermsSection("4. Permissions We Request") {
-                    "• Bluetooth and Nearby Wi-Fi: Required to discover nearby users and establish " +
-                    "peer-to-peer connections. Without these, the App cannot function.\n\n" +
-                    "• Location (approximate, while using): Required by Android for Bluetooth and " +
-                    "Wi-Fi scanning. Also used to record the approximate location of a mutual Wave.\n\n" +
+                    "• Bluetooth: Required to discover nearby users and establish " +
+                    "peer-to-peer connections. Without this, the App cannot function.\n\n" +
+                    "• Wi-Fi: Required by the Google Nearby Connections API for the peer-to-peer " +
+                    "data channel (Wi-Fi Direct). No internet connection is used. On Android 13+, " +
+                    "this permission is also required for Bluetooth scanning to work.\n\n" +
+                    "• Location (approximate, while using): Required by Android for Bluetooth " +
+                    "scanning. Also used to record the approximate location of a mutual Wave.\n\n" +
                     "• Notifications: To alert you when someone nearby waves at you, or when a " +
                     "Vibe is created.\n\n" +
                     "• Camera / Photo access: To allow you to set a profile photo.\n\n" +
@@ -408,10 +421,12 @@ fun TermsScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
 
                 TermsDivider()
 
-                TermsSection("11. Contact") {
-                    "For any questions, concerns, or rights requests regarding these Terms or " +
-                    "this Privacy Policy, contact us at: [contact@yourdomain.com]\n\n" +
-                    "Effective date: 28 April 2026"
+                TermsSection("11. Feedback & contact") {
+                    "For questions, bug reports, or rights requests regarding these Terms or " +
+                    "this Privacy Policy, please leave a review or use the feedback option on " +
+                    "our Google Play store listing. We read every review and respond to " +
+                    "substantive concerns.\n\n" +
+                    "Effective date: 30 April 2026"
                 }
             }
 

@@ -27,7 +27,9 @@ object AppModule {
                 OlaDatabase.MIGRATION_3_4,
                 OlaDatabase.MIGRATION_4_5,
                 OlaDatabase.MIGRATION_5_6,
-                OlaDatabase.MIGRATION_6_7
+                OlaDatabase.MIGRATION_6_7,
+                OlaDatabase.MIGRATION_7_8,
+                OlaDatabase.MIGRATION_8_9
             )
             .fallbackToDestructiveMigration()
             .build()

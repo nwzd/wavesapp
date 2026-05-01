@@ -80,6 +80,7 @@ class UserRepository @Inject constructor(
         otherDisplayName: String,
         otherPhotoUrl: String,
         otherContactInfo: String,
+        otherDescription: String = "",
         latitude: Double? = null,
         longitude: Double? = null
     ): Match? = matchMutex.withLock {
@@ -92,6 +93,7 @@ class UserRepository @Inject constructor(
             otherDisplayName = otherDisplayName,
             otherPhotoUrl = otherPhotoUrl,
             otherContactInfo = otherContactInfo,
+            otherDescription = otherDescription,
             createdAt = System.currentTimeMillis(),
             latitude = latitude,
             longitude = longitude
@@ -112,6 +114,7 @@ class UserRepository @Inject constructor(
         senderDisplayName: String,
         senderPhotoUrl: String,
         senderContactInfo: String = "",
+        senderDescription: String = "",
         latitude: Double?,
         longitude: Double?
     ): ReceivedOla {
@@ -126,6 +129,7 @@ class UserRepository @Inject constructor(
             senderDisplayName = senderDisplayName,
             senderPhotoUrl = senderPhotoUrl,
             senderContactInfo = senderContactInfo,
+            senderDescription = senderDescription,
             latitude = latitude,
             longitude = longitude,
             timestamp = System.currentTimeMillis()
@@ -148,6 +152,7 @@ class UserRepository @Inject constructor(
         receiverBleToken: String,
         receiverDisplayName: String = "",
         receiverPhotoUrl: String = "",
+        receiverDescription: String = "",
         latitude: Double?,
         longitude: Double?
     ): SentOla {
@@ -161,6 +166,7 @@ class UserRepository @Inject constructor(
             receiverBleToken = receiverBleToken,
             receiverDisplayName = receiverDisplayName,
             receiverPhotoUrl = receiverPhotoUrl,
+            receiverDescription = receiverDescription,
             latitude = latitude,
             longitude = longitude,
             timestamp = System.currentTimeMillis()
@@ -240,6 +246,7 @@ class UserRepository @Inject constructor(
         senderDisplayName = senderDisplayName,
         senderPhotoUrl = senderPhotoUrl,
         senderContactInfo = senderContactInfo,
+        senderDescription = senderDescription,
         latitude = latitude,
         longitude = longitude,
         timestamp = timestamp
@@ -250,6 +257,7 @@ class UserRepository @Inject constructor(
         receiverBleToken = receiverBleToken,
         receiverDisplayName = receiverDisplayName,
         receiverPhotoUrl = receiverPhotoUrl,
+        receiverDescription = receiverDescription,
         latitude = latitude,
         longitude = longitude,
         timestamp = timestamp
@@ -261,6 +269,7 @@ class UserRepository @Inject constructor(
         otherDisplayName = otherDisplayName,
         otherPhotoUrl = otherPhotoUrl,
         otherContactInfo = otherContactInfo,
+        otherDescription = otherDescription,
         createdAt = createdAt,
         latitude = latitude,
         longitude = longitude
@@ -272,6 +281,7 @@ class UserRepository @Inject constructor(
         otherDisplayName = otherDisplayName,
         otherPhotoUrl = otherPhotoUrl,
         otherContactInfo = otherContactInfo,
+        otherDescription = otherDescription,
         createdAt = createdAt,
         latitude = latitude,
         longitude = longitude

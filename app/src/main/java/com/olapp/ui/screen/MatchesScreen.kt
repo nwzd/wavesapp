@@ -8,18 +8,22 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,8 +35,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,11 +44,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,9 +59,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import java.io.File
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.olapp.data.model.ContactEntry
 import com.olapp.data.model.ContactParser
@@ -77,6 +86,7 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var detailMatch by remember { mutableStateOf<Match?>(null) }
 
     val allSelected = matches.isNotEmpty() && selectedIds.containsAll(matches.map { it.id }.toSet())
 
@@ -94,7 +104,7 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Remove $n vibe${if (n > 1) "s" else ""}?") },
-            text = { Text("Since there's no server, the other person's vibe is unaffected.") },
+            text = { Text("Due to the peer-to-peer nature of the app, data on the recipient's end is independent of your status. Consequently, your contact info may still be stored locally on their device.") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -105,6 +115,17 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    detailMatch?.let { match ->
+        VibeDetailSheet(
+            match = match,
+            onDismiss = { detailMatch = null },
+            onDelete = {
+                detailMatch = null
+                viewModel.deleteMatches(listOf(match))
             }
         )
     }
@@ -188,19 +209,298 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(matches, key = { it.id }) { match ->
                     MatchCard(
                         match = match,
                         selectionMode = selectionMode,
                         isSelected = match.id in selectedIds,
-                        onSelect = { toggleId(match.id) },
+                        onTap = {
+                            if (selectionMode) toggleId(match.id)
+                            else detailMatch = match
+                        },
                         onLongPress = { enterSelection(match.id) }
                     )
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun MatchCard(
+    match: Match,
+    selectionMode: Boolean,
+    isSelected: Boolean,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit
+) {
+    val name = match.otherDisplayName.ifEmpty { "Anonymous" }
+    val hasContacts = match.otherContactInfo.isNotBlank()
+    val hasLocation = match.latitude != null && match.longitude != null
+
+    val dotScale by rememberInfiniteTransition(label = "dot").animateFloat(
+        0.8f, 1.2f,
+        infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "dot"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (selectionMode) {
+            Checkbox(checked = isSelected, onCheckedChange = { onTap() })
+        }
+
+        Box(contentAlignment = Alignment.BottomEnd) {
+            ProfileAvatar(photoPath = match.otherPhotoUrl, name = name, size = 50.dp)
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .scale(dotScale)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Brand, Tangerine))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("✦", style = MaterialTheme.typography.labelSmall.copy(fontSize = 6.sp), color = Color.White)
+            }
+        }
+
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(
+                timeAgo(match.createdAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Subtle indicators so users know there's more to see
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (hasContacts) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(Brand.copy(alpha = 0.5f))
+                )
+            }
+            if (hasLocation) {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
+@Composable
+private fun VibeDetailSheet(
+    match: Match,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val context = LocalContext.current
+    val name = match.otherDisplayName.ifEmpty { "Anonymous" }
+    val lat = match.latitude
+    val lon = match.longitude
+    val contactEntries = remember(match.otherContactInfo) {
+        ContactParser.parse(match.otherContactInfo)
+    }
+    var hdPhotoPath by remember(match.otherBleToken) { mutableStateOf<String?>(null) }
+    LaunchedEffect(match.otherBleToken) {
+        val hdFile = File(context.filesDir, "peer_photos/${match.otherBleToken}_hd.jpg")
+        repeat(10) {
+            if (hdFile.exists()) { hdPhotoPath = hdFile.absolutePath; return@LaunchedEffect }
+            delay(600)
+        }
+    }
+    val photoToShow = hdPhotoPath ?: match.otherPhotoUrl
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Remove vibe with $name?") },
+            text = { Text("Due to the peer-to-peer nature of the app, your contact info may still be stored locally on their device.") },
+            confirmButton = {
+                TextButton(onClick = { showDeleteConfirm = false; onDelete() }) {
+                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    )
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Handle bar
+                Box(
+                    modifier = Modifier
+                        .size(width = 40.dp, height = 4.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+
+                // Avatar + name + time
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    ProfileAvatar(photoPath = photoToShow, name = name, size = 100.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text(name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Vibed ${timeAgo(match.createdAt)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (match.otherDescription.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                match.otherDescription,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                // Contacts
+                if (contactEntries.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Contact",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            contactEntries.forEach { entry ->
+                                ContactChip(entry = entry, onClick = {
+                                    val uri = ContactParser.intentUri(entry) ?: return@ContactChip
+                                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
+                                })
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        "No contact info shared",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+
+                // Map button
+                if (lat != null && lon != null) {
+                    Button(
+                        onClick = {
+                            val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text("Where we met", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+
+                // Remove
+                TextButton(onClick = { showDeleteConfirm = true }) {
+                    Text(
+                        "Remove vibe",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+
+                Spacer(Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactChip(entry: ContactEntry, onClick: () -> Unit) {
+    val isClickable = ContactParser.intentUri(entry) != null
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(entry.platform.brandColor.copy(alpha = 0.10f))
+            .then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        PlatformIcon(platform = entry.platform, size = 16.dp)
+        Text(
+            entry.value,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isClickable) entry.platform.brandColor else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
+        )
     }
 }
 
@@ -241,142 +541,6 @@ private fun VibesEmptyState() {
                 textAlign = TextAlign.Center
             )
         }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun MatchCard(
-    match: Match,
-    selectionMode: Boolean,
-    isSelected: Boolean,
-    onSelect: () -> Unit,
-    onLongPress: () -> Unit
-) {
-    val context = LocalContext.current
-    val name = match.otherDisplayName.ifEmpty { "Anonymous" }
-    val lat = match.latitude
-    val lon = match.longitude
-    val contactEntries = remember(match.otherContactInfo) {
-        ContactParser.parse(match.otherContactInfo)
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth().combinedClickable(
-            onClick = if (selectionMode) onSelect else { {} },
-            onLongClick = onLongPress
-        ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (selectionMode) {
-                    Checkbox(checked = isSelected, onCheckedChange = { onSelect() })
-                }
-
-                val dotScale by rememberInfiniteTransition(label = "dot").animateFloat(
-                    0.8f, 1.2f,
-                    infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                    label = "dot"
-                )
-                Box(contentAlignment = Alignment.BottomEnd) {
-                    ProfileAvatar(photoPath = match.otherPhotoUrl, name = name, size = 52.dp)
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .scale(dotScale)
-                            .clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(Brand, Tangerine))),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("✦", style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp), color = Color.White)
-                    }
-                }
-
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        timeAgo(match.createdAt),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (contactEntries.isNotEmpty()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    contactEntries.forEach { entry ->
-                        ContactChip(entry = entry, onClick = {
-                            val uri = ContactParser.intentUri(entry) ?: return@ContactChip
-                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
-                        })
-                    }
-                }
-            }
-
-            if (lat != null && lon != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(Icons.Default.LocationOn, null, Modifier.size(12.dp), Brand.copy(alpha = 0.7f))
-                    Text(
-                        "Met nearby",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(
-                        onClick = {
-                            val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
-                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
-                        },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                    ) {
-                        Text("Map", style = MaterialTheme.typography.labelSmall, color = Brand)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ContactChip(entry: ContactEntry, onClick: () -> Unit) {
-    val isClickable = ContactParser.intentUri(entry) != null
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(entry.platform.brandColor.copy(alpha = 0.10f))
-            .then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        PlatformIcon(platform = entry.platform, size = 14.dp)
-        Text(
-            entry.value,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isClickable) entry.platform.brandColor else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1
-        )
     }
 }
 

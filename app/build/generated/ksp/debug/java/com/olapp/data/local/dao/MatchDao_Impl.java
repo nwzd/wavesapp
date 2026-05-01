@@ -51,7 +51,7 @@ public final class MatchDao_Impl implements MatchDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `match` (`id`,`otherBleToken`,`otherDisplayName`,`otherPhotoUrl`,`otherContactInfo`,`createdAt`,`latitude`,`longitude`) VALUES (?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `match` (`id`,`otherBleToken`,`otherDisplayName`,`otherPhotoUrl`,`otherContactInfo`,`otherDescription`,`createdAt`,`latitude`,`longitude`) VALUES (?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -62,16 +62,17 @@ public final class MatchDao_Impl implements MatchDao {
         statement.bindString(3, entity.getOtherDisplayName());
         statement.bindString(4, entity.getOtherPhotoUrl());
         statement.bindString(5, entity.getOtherContactInfo());
-        statement.bindLong(6, entity.getCreatedAt());
+        statement.bindString(6, entity.getOtherDescription());
+        statement.bindLong(7, entity.getCreatedAt());
         if (entity.getLatitude() == null) {
-          statement.bindNull(7);
-        } else {
-          statement.bindDouble(7, entity.getLatitude());
-        }
-        if (entity.getLongitude() == null) {
           statement.bindNull(8);
         } else {
-          statement.bindDouble(8, entity.getLongitude());
+          statement.bindDouble(8, entity.getLatitude());
+        }
+        if (entity.getLongitude() == null) {
+          statement.bindNull(9);
+        } else {
+          statement.bindDouble(9, entity.getLongitude());
         }
       }
     };
@@ -246,6 +247,7 @@ public final class MatchDao_Impl implements MatchDao {
           final int _cursorIndexOfOtherDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "otherDisplayName");
           final int _cursorIndexOfOtherPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "otherPhotoUrl");
           final int _cursorIndexOfOtherContactInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "otherContactInfo");
+          final int _cursorIndexOfOtherDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "otherDescription");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
@@ -262,6 +264,8 @@ public final class MatchDao_Impl implements MatchDao {
             _tmpOtherPhotoUrl = _cursor.getString(_cursorIndexOfOtherPhotoUrl);
             final String _tmpOtherContactInfo;
             _tmpOtherContactInfo = _cursor.getString(_cursorIndexOfOtherContactInfo);
+            final String _tmpOtherDescription;
+            _tmpOtherDescription = _cursor.getString(_cursorIndexOfOtherDescription);
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
             final Double _tmpLatitude;
@@ -276,7 +280,7 @@ public final class MatchDao_Impl implements MatchDao {
             } else {
               _tmpLongitude = _cursor.getDouble(_cursorIndexOfLongitude);
             }
-            _item = new MatchEntity(_tmpId,_tmpOtherBleToken,_tmpOtherDisplayName,_tmpOtherPhotoUrl,_tmpOtherContactInfo,_tmpCreatedAt,_tmpLatitude,_tmpLongitude);
+            _item = new MatchEntity(_tmpId,_tmpOtherBleToken,_tmpOtherDisplayName,_tmpOtherPhotoUrl,_tmpOtherContactInfo,_tmpOtherDescription,_tmpCreatedAt,_tmpLatitude,_tmpLongitude);
             _result.add(_item);
           }
           return _result;
@@ -310,6 +314,7 @@ public final class MatchDao_Impl implements MatchDao {
           final int _cursorIndexOfOtherDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "otherDisplayName");
           final int _cursorIndexOfOtherPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "otherPhotoUrl");
           final int _cursorIndexOfOtherContactInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "otherContactInfo");
+          final int _cursorIndexOfOtherDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "otherDescription");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
@@ -325,6 +330,8 @@ public final class MatchDao_Impl implements MatchDao {
             _tmpOtherPhotoUrl = _cursor.getString(_cursorIndexOfOtherPhotoUrl);
             final String _tmpOtherContactInfo;
             _tmpOtherContactInfo = _cursor.getString(_cursorIndexOfOtherContactInfo);
+            final String _tmpOtherDescription;
+            _tmpOtherDescription = _cursor.getString(_cursorIndexOfOtherDescription);
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
             final Double _tmpLatitude;
@@ -339,7 +346,7 @@ public final class MatchDao_Impl implements MatchDao {
             } else {
               _tmpLongitude = _cursor.getDouble(_cursorIndexOfLongitude);
             }
-            _result = new MatchEntity(_tmpId,_tmpOtherBleToken,_tmpOtherDisplayName,_tmpOtherPhotoUrl,_tmpOtherContactInfo,_tmpCreatedAt,_tmpLatitude,_tmpLongitude);
+            _result = new MatchEntity(_tmpId,_tmpOtherBleToken,_tmpOtherDisplayName,_tmpOtherPhotoUrl,_tmpOtherContactInfo,_tmpOtherDescription,_tmpCreatedAt,_tmpLatitude,_tmpLongitude);
           } else {
             _result = null;
           }
@@ -371,6 +378,7 @@ public final class MatchDao_Impl implements MatchDao {
           final int _cursorIndexOfOtherDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "otherDisplayName");
           final int _cursorIndexOfOtherPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "otherPhotoUrl");
           final int _cursorIndexOfOtherContactInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "otherContactInfo");
+          final int _cursorIndexOfOtherDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "otherDescription");
           final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
@@ -386,6 +394,8 @@ public final class MatchDao_Impl implements MatchDao {
             _tmpOtherPhotoUrl = _cursor.getString(_cursorIndexOfOtherPhotoUrl);
             final String _tmpOtherContactInfo;
             _tmpOtherContactInfo = _cursor.getString(_cursorIndexOfOtherContactInfo);
+            final String _tmpOtherDescription;
+            _tmpOtherDescription = _cursor.getString(_cursorIndexOfOtherDescription);
             final long _tmpCreatedAt;
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
             final Double _tmpLatitude;
@@ -400,7 +410,7 @@ public final class MatchDao_Impl implements MatchDao {
             } else {
               _tmpLongitude = _cursor.getDouble(_cursorIndexOfLongitude);
             }
-            _result = new MatchEntity(_tmpId,_tmpOtherBleToken,_tmpOtherDisplayName,_tmpOtherPhotoUrl,_tmpOtherContactInfo,_tmpCreatedAt,_tmpLatitude,_tmpLongitude);
+            _result = new MatchEntity(_tmpId,_tmpOtherBleToken,_tmpOtherDisplayName,_tmpOtherPhotoUrl,_tmpOtherContactInfo,_tmpOtherDescription,_tmpCreatedAt,_tmpLatitude,_tmpLongitude);
           } else {
             _result = null;
           }

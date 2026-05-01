@@ -17,6 +17,7 @@ data class ReceivedOla(
     val senderDisplayName: String,
     val senderPhotoUrl: String,
     val senderContactInfo: String = "",
+    val senderDescription: String = "",
     val latitude: Double?,
     val longitude: Double?,
     val timestamp: Long
@@ -27,6 +28,7 @@ data class SentOla(
     val receiverBleToken: String,
     val receiverDisplayName: String = "",
     val receiverPhotoUrl: String = "",
+    val receiverDescription: String = "",
     val latitude: Double?,
     val longitude: Double?,
     val timestamp: Long
@@ -38,6 +40,7 @@ data class Match(
     val otherDisplayName: String,
     val otherPhotoUrl: String,
     val otherContactInfo: String,
+    val otherDescription: String = "",
     val createdAt: Long,
     val latitude: Double? = null,
     val longitude: Double? = null

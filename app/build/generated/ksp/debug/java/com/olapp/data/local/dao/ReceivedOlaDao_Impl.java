@@ -51,7 +51,7 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `received_ola` (`id`,`senderBleToken`,`senderDisplayName`,`senderPhotoUrl`,`senderContactInfo`,`latitude`,`longitude`,`timestamp`) VALUES (?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `received_ola` (`id`,`senderBleToken`,`senderDisplayName`,`senderPhotoUrl`,`senderContactInfo`,`senderDescription`,`latitude`,`longitude`,`timestamp`) VALUES (?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -62,17 +62,18 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
         statement.bindString(3, entity.getSenderDisplayName());
         statement.bindString(4, entity.getSenderPhotoUrl());
         statement.bindString(5, entity.getSenderContactInfo());
+        statement.bindString(6, entity.getSenderDescription());
         if (entity.getLatitude() == null) {
-          statement.bindNull(6);
-        } else {
-          statement.bindDouble(6, entity.getLatitude());
-        }
-        if (entity.getLongitude() == null) {
           statement.bindNull(7);
         } else {
-          statement.bindDouble(7, entity.getLongitude());
+          statement.bindDouble(7, entity.getLatitude());
         }
-        statement.bindLong(8, entity.getTimestamp());
+        if (entity.getLongitude() == null) {
+          statement.bindNull(8);
+        } else {
+          statement.bindDouble(8, entity.getLongitude());
+        }
+        statement.bindLong(9, entity.getTimestamp());
       }
     };
     this.__preparedStmtOfDeleteById = new SharedSQLiteStatement(__db) {
@@ -241,6 +242,7 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
           final int _cursorIndexOfSenderDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "senderDisplayName");
           final int _cursorIndexOfSenderPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "senderPhotoUrl");
           final int _cursorIndexOfSenderContactInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "senderContactInfo");
+          final int _cursorIndexOfSenderDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "senderDescription");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
@@ -257,6 +259,8 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
             _tmpSenderPhotoUrl = _cursor.getString(_cursorIndexOfSenderPhotoUrl);
             final String _tmpSenderContactInfo;
             _tmpSenderContactInfo = _cursor.getString(_cursorIndexOfSenderContactInfo);
+            final String _tmpSenderDescription;
+            _tmpSenderDescription = _cursor.getString(_cursorIndexOfSenderDescription);
             final Double _tmpLatitude;
             if (_cursor.isNull(_cursorIndexOfLatitude)) {
               _tmpLatitude = null;
@@ -271,7 +275,7 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
             }
             final long _tmpTimestamp;
             _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
-            _item = new ReceivedOlaEntity(_tmpId,_tmpSenderBleToken,_tmpSenderDisplayName,_tmpSenderPhotoUrl,_tmpSenderContactInfo,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
+            _item = new ReceivedOlaEntity(_tmpId,_tmpSenderBleToken,_tmpSenderDisplayName,_tmpSenderPhotoUrl,_tmpSenderContactInfo,_tmpSenderDescription,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
             _result.add(_item);
           }
           return _result;
@@ -306,6 +310,7 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
           final int _cursorIndexOfSenderDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "senderDisplayName");
           final int _cursorIndexOfSenderPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "senderPhotoUrl");
           final int _cursorIndexOfSenderContactInfo = CursorUtil.getColumnIndexOrThrow(_cursor, "senderContactInfo");
+          final int _cursorIndexOfSenderDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "senderDescription");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
@@ -321,6 +326,8 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
             _tmpSenderPhotoUrl = _cursor.getString(_cursorIndexOfSenderPhotoUrl);
             final String _tmpSenderContactInfo;
             _tmpSenderContactInfo = _cursor.getString(_cursorIndexOfSenderContactInfo);
+            final String _tmpSenderDescription;
+            _tmpSenderDescription = _cursor.getString(_cursorIndexOfSenderDescription);
             final Double _tmpLatitude;
             if (_cursor.isNull(_cursorIndexOfLatitude)) {
               _tmpLatitude = null;
@@ -335,7 +342,7 @@ public final class ReceivedOlaDao_Impl implements ReceivedOlaDao {
             }
             final long _tmpTimestamp;
             _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
-            _result = new ReceivedOlaEntity(_tmpId,_tmpSenderBleToken,_tmpSenderDisplayName,_tmpSenderPhotoUrl,_tmpSenderContactInfo,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
+            _result = new ReceivedOlaEntity(_tmpId,_tmpSenderBleToken,_tmpSenderDisplayName,_tmpSenderPhotoUrl,_tmpSenderContactInfo,_tmpSenderDescription,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
           } else {
             _result = null;
           }

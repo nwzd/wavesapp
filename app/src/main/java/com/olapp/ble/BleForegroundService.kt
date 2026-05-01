@@ -193,11 +193,14 @@ class BleForegroundService : Service() {
                         otherDisplayName = data.displayName,
                         otherContactInfo = data.contactInfo,
                         otherPhotoUrl = data.photoPath ?: "",
+                        otherDescription = data.description,
                         latitude = location?.first,
                         longitude = location?.second
                     )
                     Log.d(TAG, "Match created via confirmation from ${data.displayName}")
                 }
+                // Request HD photo now that we know it's a match
+                nearbyManager.endpointIdForToken(data.token)?.let { nearbyManager.requestHdPhoto(it) }
                 // Notify regardless of who created the match — covers the case where the
                 // local side already created it (wave-back initiator) but still needs a ping.
                 if (notifiedMatchTokens.add(data.token)) showMatchNotification(data.token, data.displayName)
@@ -269,12 +272,14 @@ class BleForegroundService : Service() {
         val peer = nearbyManager.peers.value.values.find { it.bleToken == senderToken }
         val senderPhotoPath = peer?.photoPath?.takeIf { it.isNotEmpty() } ?: ""
         val senderContact = peer?.contactInfo ?: ""
+        val senderDesc = peer?.description ?: ""
 
         val saved = userRepository.saveReceivedOla(
             senderBleToken = senderToken,
             senderDisplayName = senderName,
             senderPhotoUrl = senderPhotoPath,
             senderContactInfo = senderContact,
+            senderDescription = senderDesc,
             latitude = null,
             longitude = null
         )
@@ -289,17 +294,20 @@ class BleForegroundService : Service() {
                 existing?.senderPhotoUrl?.takeIf { it.isNotEmpty() } ?: ""
             }
             val resolvedContact = senderContact.ifEmpty { existing?.senderContactInfo ?: "" }
+            val resolvedDesc = senderDesc.ifEmpty { existing?.senderDescription ?: "" }
             userRepository.createMatch(
                 otherBleToken = senderToken,
                 otherDisplayName = resolvedName,
                 otherPhotoUrl = resolvedPhoto,
                 otherContactInfo = resolvedContact,
+                otherDescription = resolvedDesc,
                 latitude = location?.first,
                 longitude = location?.second
             )
             nearbyManager.clearPendingOla(senderToken)
             nearbyManager.endpointIdForToken(senderToken)?.let { eid ->
                 nearbyManager.sendMatchConfirmation(eid)
+                nearbyManager.requestHdPhoto(eid)
                 if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
             }
             Log.d(TAG, "Auto-match with \"$senderName\"")

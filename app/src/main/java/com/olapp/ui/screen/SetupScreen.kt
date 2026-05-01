@@ -27,23 +27,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,8 +50,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -64,9 +59,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
 import coil.compose.AsyncImage
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import com.olapp.data.model.ContactEntry
 import com.olapp.data.model.ContactParser
 import com.olapp.data.model.ContactPlatform
@@ -102,14 +94,7 @@ fun SetupScreen(
     val photoIsSelfie by viewModel.photoIsSelfie.collectAsState()
     val isFirstSetup by viewModel.isFirstSetup.collectAsState()
 
-    var showDatePicker by remember { mutableStateOf(false) }
-    var selectedDobMillis by remember { mutableStateOf<Long?>(null) }
-    val datePickerState = rememberDatePickerState(
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                utcTimeMillis <= System.currentTimeMillis()
-        }
-    )
+    var confirmedOver18 by remember { mutableStateOf(false) }
 
     val existingName by viewModel.existingDisplayName.collectAsState()
     val existingContact by viewModel.existingContactInfo.collectAsState()
@@ -159,23 +144,6 @@ fun SetupScreen(
     }
 
     LaunchedEffect(saved) { if (saved) onSaved() }
-
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { selectedDobMillis = it }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = Brand,
@@ -313,34 +281,26 @@ fun SetupScreen(
         )
 
         if (isFirstSetup) {
-            val dobLabel = selectedDobMillis?.let { millis ->
-                Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                    .format(DateTimeFormatter.ofPattern("dd / MM / yyyy"))
-            } ?: ""
-
-            val dobInteraction = remember { MutableInteractionSource() }
-            LaunchedEffect(dobInteraction) {
-                dobInteraction.interactions.collect { interaction ->
-                    if (interaction is PressInteraction.Press) showDatePicker = true
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable { confirmedOver18 = !confirmedOver18 }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Checkbox(
+                    checked = confirmedOver18,
+                    onCheckedChange = { confirmedOver18 = it },
+                    colors = CheckboxDefaults.colors(checkedColor = Brand)
+                )
+                Text(
+                    "I confirm I am 18 or older",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
-
-            OutlinedTextField(
-                value = dobLabel,
-                onValueChange = {},
-                label = { Text("Date of birth (18+ only)") },
-                placeholder = { Text("dd / mm / yyyy", style = MaterialTheme.typography.bodySmall) },
-                readOnly = true,
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = fieldColors,
-                modifier = Modifier.fillMaxWidth(),
-                interactionSource = dobInteraction,
-                trailingIcon = {
-                    Icon(Icons.Default.DateRange, null, Modifier.size(18.dp),
-                        MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            )
         }
 
         OutlinedTextField(
@@ -477,7 +437,7 @@ fun SetupScreen(
                     if (dcHandle.isNotBlank())  add(ContactEntry(ContactPlatform.DISCORD,   dcHandle.trim()))
                     if (emAddress.isNotBlank()) add(ContactEntry(ContactPlatform.EMAIL,     emAddress.trim()))
                 })
-                viewModel.save(displayName, combinedContact, description, discoveryEnabled, selectedDobMillis)
+                viewModel.save(displayName, combinedContact, description, discoveryEnabled, confirmedOver18)
             },
             enabled = !isSaving && !photoValidating,
             modifier = Modifier.fillMaxWidth().height(58.dp),

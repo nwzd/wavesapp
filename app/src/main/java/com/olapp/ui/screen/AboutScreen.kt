@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,8 @@ import com.olapp.ui.theme.LogoGradient
 import com.olapp.ui.theme.Tangerine
 
 @Composable
-fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
+fun AboutScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -133,7 +135,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 HowItWorksStep(
                     emoji = "📡",
                     title = "Your phone becomes a beacon",
-                    body = "When you open Wave & Vibe, your phone starts broadcasting a short anonymous signal over Bluetooth and Wi-Fi — the same technology your phone already uses every day. People nearby running Wave & Vibe receive your signal and appear in each other's Nearby list, usually within seconds to a couple of minutes."
+                    body = "When you open Wave & Vibe, your phone broadcasts a completely anonymous signal over Bluetooth — no name, no ID, nothing identifiable. People nearby running Wave & Vibe receive the signal and appear in each other's Nearby list. Both Bluetooth and Wi-Fi must be on, but no internet connection is needed."
                 )
                 AboutDivider()
                 HowItWorksStep(
@@ -179,7 +181,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 PrivacyPill(
                     emoji = "🔒",
                     title = "Direct phone-to-phone",
-                    body = "When two phones connect, profiles are exchanged directly between them over Bluetooth or Wi-Fi — like AirDrop. No cloud relay, no middleman. The data never leaves the two devices involved."
+                    body = "When two phones connect, profiles are exchanged directly between them over Bluetooth and Wi-Fi Direct — like AirDrop. No cloud relay, no middleman. The data never leaves the two devices involved."
                 )
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(
@@ -202,21 +204,36 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                 Spacer(Modifier.height(10.dp))
                 PrivacyPill(
                     emoji = "🆓",
-                    title = "Free. No ads. No tracking.",
-                    body = "Wave & Vibe is free to download and use. We do not sell data, run ads, or track behaviour. We have no business model that depends on your personal information."
+                    title = "Free. No tracking.",
+                    body = "Wave & Vibe is free to download and use. We do not sell data, or track behaviour. We have no business model that depends on your personal information."
                 )
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // Contact
+            // Feedback
             AboutCard {
-                GradientLabel("Get in touch")
+                GradientLabel("Feedback & bugs")
                 Spacer(Modifier.height(8.dp))
-                AboutBody("Bug, question, or just want to say hello? We read every message.")
+                AboutBody("Found a bug or have a suggestion? Leave a review or rating on Google Play — we read every one and ship fixes based on your feedback.")
                 Spacer(Modifier.height(12.dp))
                 TextButton(
-                    onClick = onContact,
+                    onClick = {
+                        val pkg = context.packageName
+                        try {
+                            context.startActivity(
+                                android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("market://details?id=$pkg"))
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        } catch (_: Exception) {
+                            context.startActivity(
+                                android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://play.google.com/store/apps/details?id=$pkg"))
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
@@ -227,7 +244,7 @@ fun AboutScreen(onBack: () -> Unit, onContact: () -> Unit = {}) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "Send us a message ✦",
+                            "Rate on Google Play ✦",
                             style = MaterialTheme.typography.labelLarge,
                             color = Color.White
                         )

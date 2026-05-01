@@ -11,6 +11,7 @@ data class ReceivedOlaEntity(
     val senderDisplayName: String,
     val senderPhotoUrl: String,
     val senderContactInfo: String = "",
+    val senderDescription: String = "",
     val latitude: Double?,
     val longitude: Double?,
     val timestamp: Long = System.currentTimeMillis()

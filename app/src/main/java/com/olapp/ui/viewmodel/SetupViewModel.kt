@@ -18,10 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.time.Instant
-import java.time.LocalDate
-import java.time.Period
-import java.time.ZoneOffset
 import javax.inject.Inject
 
 @HiltViewModel
@@ -52,7 +48,7 @@ class SetupViewModel @Inject constructor(
     private val _existingPhotoPath = MutableStateFlow<String?>(null)
     val existingPhotoPath: StateFlow<String?> = _existingPhotoPath.asStateFlow()
 
-    private val _existingDiscoverable = MutableStateFlow(true)
+    private val _existingDiscoverable = MutableStateFlow(false)
     val existingDiscoverable: StateFlow<Boolean> = _existingDiscoverable.asStateFlow()
 
     private val _validatedPhotoUri = MutableStateFlow<Uri?>(null)
@@ -116,19 +112,12 @@ class SetupViewModel @Inject constructor(
         contactInfo: String,
         description: String,
         discoveryEnabled: Boolean,
-        dateOfBirthMillis: Long? = null
+        isOver18: Boolean = false
     ) {
         if (displayName.isBlank()) { _error.value = "Name can't be empty"; return }
-        if (_isFirstSetup.value) {
-            if (dateOfBirthMillis == null) {
-                _error.value = "Please enter your date of birth."
-                return
-            }
-            val dob = Instant.ofEpochMilli(dateOfBirthMillis).atZone(ZoneOffset.UTC).toLocalDate()
-            if (Period.between(dob, LocalDate.now()).years < 18) {
-                _error.value = "You must be 18 or older to use Wave & Vibe."
-                return
-            }
+        if (_isFirstSetup.value && !isOver18) {
+            _error.value = "You must confirm you are 18 or older to use Wave & Vibe."
+            return
         }
 
         viewModelScope.launch {

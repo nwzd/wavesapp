@@ -111,6 +111,7 @@ class DiscoveryViewModel @Inject constructor(
                 receiverBleToken = bleToken,
                 receiverDisplayName = device.displayName,
                 receiverPhotoUrl = device.photoPath ?: "",
+                receiverDescription = device.description,
                 latitude = null,
                 longitude = null
             )
@@ -131,12 +132,15 @@ class DiscoveryViewModel @Inject constructor(
                     otherPhotoUrl = resolvedPhoto,
                     otherContactInfo = peer?.contactInfo?.takeIf { it.isNotEmpty() }
                         ?: received.senderContactInfo,
+                    otherDescription = peer?.description?.takeIf { it.isNotEmpty() }
+                        ?: received.senderDescription,
                     latitude = location?.first,
                     longitude = location?.second
                 )
                 nearbyManager.clearPendingOla(bleToken)
                 nearbyManager.endpointIdForToken(bleToken)?.let { eid ->
                     nearbyManager.sendMatchConfirmation(eid)
+                    nearbyManager.requestHdPhoto(eid)
                     if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
                 }
             }
@@ -160,9 +164,8 @@ class DiscoveryViewModel @Inject constructor(
         viewModelScope.launch {
             userRepository.updateDiscovery(enabled)
             _discoveryEnabled.value = enabled
-            val profile = userRepository.getMyProfile() ?: return@launch
-            if (enabled) nearbyManager.startDiscoveryAndAdvertising(profile)
-            else nearbyManager.stop()
+            // BleForegroundService.profileJob is the sole owner of Nearby state;
+            // it observes the DB change and starts/stops discovery accordingly.
         }
     }
 

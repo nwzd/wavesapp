@@ -5,11 +5,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.WifiTethering
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.outlined.BluetoothSearching
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PeopleOutline
-import androidx.compose.material.icons.outlined.WifiTethering
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -31,7 +31,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.olapp.ui.screen.AboutScreen
-import com.olapp.ui.screen.ContactScreen
 import com.olapp.ui.screen.DiscoveryScreen
 import com.olapp.ui.screen.MatchesScreen
 import com.olapp.ui.screen.OlasScreen
@@ -46,7 +45,7 @@ private data class NavItem(
 )
 
 private val navItems = listOf(
-    NavItem("discovery", "Nearby", Icons.Default.WifiTethering, Icons.Outlined.WifiTethering),
+    NavItem("discovery", "Nearby", Icons.Default.Bluetooth, Icons.Outlined.BluetoothSearching),
     NavItem("olas",      "Waves",  Icons.Default.MailOutline,   Icons.Outlined.MailOutline),
     NavItem("matches",   "Vibes",   Icons.Default.People,        Icons.Outlined.PeopleOutline),
     NavItem("profile",   "Profile", Icons.Default.Person,       Icons.Outlined.Person),
@@ -60,7 +59,6 @@ fun MainNavigation() {
 
     var editingProfile  by remember { mutableStateOf(false) }
     var showingAbout    by remember { mutableStateOf(false) }
-    var showingContact  by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -109,11 +107,7 @@ fun MainNavigation() {
             composable("profile") {
                 when {
                     editingProfile -> SetupScreen(onSaved = { editingProfile = false })
-                    showingContact -> ContactScreen(onBack = { showingContact = false })
-                    showingAbout   -> AboutScreen(
-                        onBack = { showingAbout = false },
-                        onContact = { showingContact = true }
-                    )
+                    showingAbout   -> AboutScreen(onBack = { showingAbout = false })
                     else -> ProfileScreen(
                         onEdit = { editingProfile = true },
                         onAbout = { showingAbout = true }

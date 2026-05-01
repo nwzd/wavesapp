@@ -4,7 +4,7 @@
             "outputFile": "com.olapp-mergeDebugResources-70:/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "/home/wsx/.gradle/caches/transforms-4/9098aeb15594136ef4ec1c2189be79cb/transformed/appcompat-1.6.1/res/values-v23/values-v23.xml",
+                    "source": "/home/wsx/.gradle/caches/transforms-4/b822b35e201987b9d520aea8413b472e/transformed/appcompat-1.6.1/res/values-v23/values-v23.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,20,34,35,36,39,43,44,45,46",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",
