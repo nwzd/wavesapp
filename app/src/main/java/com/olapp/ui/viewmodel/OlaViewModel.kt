@@ -80,13 +80,12 @@ class OlaViewModel @Inject constructor(
                 receiverBleToken = senderBleToken,
                 receiverDisplayName = receivedOla.senderDisplayName,
                 receiverPhotoUrl = receivedOla.senderPhotoUrl,
+                receiverDescription = receivedOla.senderDescription,
                 latitude = null,
                 longitude = null
             )
 
-            val endpointId = nearbyManager.endpointIdForToken(senderBleToken)
-            if (endpointId != null) nearbyManager.sendOla(endpointId)
-            else Log.w(TAG, "respondToOla: $senderBleToken not currently connected")
+            nearbyManager.queueOlaForToken(senderBleToken)
 
             val location = getLastLocation()
             val peer = nearbyManager.peers.value.values.find { it.bleToken == senderBleToken }
@@ -100,11 +99,14 @@ class OlaViewModel @Inject constructor(
                 otherPhotoUrl = resolvedPhoto,
                 otherContactInfo = peer?.contactInfo?.takeIf { it.isNotEmpty() }
                     ?: receivedOla.senderContactInfo,
+                otherDescription = peer?.description?.takeIf { it.isNotEmpty() }
+                    ?: receivedOla.senderDescription,
                 latitude = location?.first,
                 longitude = location?.second
             )
             nearbyManager.endpointIdForToken(senderBleToken)?.let { eid ->
                 nearbyManager.sendMatchConfirmation(eid)
+                nearbyManager.requestHdPhoto(eid)
                 if (location != null) nearbyManager.sendMatchLocation(eid, location.first, location.second)
             }
         }

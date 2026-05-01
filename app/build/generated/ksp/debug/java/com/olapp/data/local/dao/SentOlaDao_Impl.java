@@ -50,7 +50,7 @@ public final class SentOlaDao_Impl implements SentOlaDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `sent_ola` (`id`,`receiverBleToken`,`receiverDisplayName`,`receiverPhotoUrl`,`latitude`,`longitude`,`timestamp`) VALUES (?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `sent_ola` (`id`,`receiverBleToken`,`receiverDisplayName`,`receiverPhotoUrl`,`receiverDescription`,`latitude`,`longitude`,`timestamp`) VALUES (?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -60,17 +60,18 @@ public final class SentOlaDao_Impl implements SentOlaDao {
         statement.bindString(2, entity.getReceiverBleToken());
         statement.bindString(3, entity.getReceiverDisplayName());
         statement.bindString(4, entity.getReceiverPhotoUrl());
+        statement.bindString(5, entity.getReceiverDescription());
         if (entity.getLatitude() == null) {
-          statement.bindNull(5);
-        } else {
-          statement.bindDouble(5, entity.getLatitude());
-        }
-        if (entity.getLongitude() == null) {
           statement.bindNull(6);
         } else {
-          statement.bindDouble(6, entity.getLongitude());
+          statement.bindDouble(6, entity.getLatitude());
         }
-        statement.bindLong(7, entity.getTimestamp());
+        if (entity.getLongitude() == null) {
+          statement.bindNull(7);
+        } else {
+          statement.bindDouble(7, entity.getLongitude());
+        }
+        statement.bindLong(8, entity.getTimestamp());
       }
     };
     this.__preparedStmtOfDeleteById = new SharedSQLiteStatement(__db) {
@@ -238,6 +239,7 @@ public final class SentOlaDao_Impl implements SentOlaDao {
           final int _cursorIndexOfReceiverBleToken = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverBleToken");
           final int _cursorIndexOfReceiverDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverDisplayName");
           final int _cursorIndexOfReceiverPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverPhotoUrl");
+          final int _cursorIndexOfReceiverDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverDescription");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
@@ -252,6 +254,8 @@ public final class SentOlaDao_Impl implements SentOlaDao {
             _tmpReceiverDisplayName = _cursor.getString(_cursorIndexOfReceiverDisplayName);
             final String _tmpReceiverPhotoUrl;
             _tmpReceiverPhotoUrl = _cursor.getString(_cursorIndexOfReceiverPhotoUrl);
+            final String _tmpReceiverDescription;
+            _tmpReceiverDescription = _cursor.getString(_cursorIndexOfReceiverDescription);
             final Double _tmpLatitude;
             if (_cursor.isNull(_cursorIndexOfLatitude)) {
               _tmpLatitude = null;
@@ -266,7 +270,7 @@ public final class SentOlaDao_Impl implements SentOlaDao {
             }
             final long _tmpTimestamp;
             _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
-            _item = new SentOlaEntity(_tmpId,_tmpReceiverBleToken,_tmpReceiverDisplayName,_tmpReceiverPhotoUrl,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
+            _item = new SentOlaEntity(_tmpId,_tmpReceiverBleToken,_tmpReceiverDisplayName,_tmpReceiverPhotoUrl,_tmpReceiverDescription,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
             _result.add(_item);
           }
           return _result;
@@ -300,6 +304,7 @@ public final class SentOlaDao_Impl implements SentOlaDao {
           final int _cursorIndexOfReceiverBleToken = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverBleToken");
           final int _cursorIndexOfReceiverDisplayName = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverDisplayName");
           final int _cursorIndexOfReceiverPhotoUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverPhotoUrl");
+          final int _cursorIndexOfReceiverDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "receiverDescription");
           final int _cursorIndexOfLatitude = CursorUtil.getColumnIndexOrThrow(_cursor, "latitude");
           final int _cursorIndexOfLongitude = CursorUtil.getColumnIndexOrThrow(_cursor, "longitude");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
@@ -313,6 +318,8 @@ public final class SentOlaDao_Impl implements SentOlaDao {
             _tmpReceiverDisplayName = _cursor.getString(_cursorIndexOfReceiverDisplayName);
             final String _tmpReceiverPhotoUrl;
             _tmpReceiverPhotoUrl = _cursor.getString(_cursorIndexOfReceiverPhotoUrl);
+            final String _tmpReceiverDescription;
+            _tmpReceiverDescription = _cursor.getString(_cursorIndexOfReceiverDescription);
             final Double _tmpLatitude;
             if (_cursor.isNull(_cursorIndexOfLatitude)) {
               _tmpLatitude = null;
@@ -327,7 +334,7 @@ public final class SentOlaDao_Impl implements SentOlaDao {
             }
             final long _tmpTimestamp;
             _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
-            _result = new SentOlaEntity(_tmpId,_tmpReceiverBleToken,_tmpReceiverDisplayName,_tmpReceiverPhotoUrl,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
+            _result = new SentOlaEntity(_tmpId,_tmpReceiverBleToken,_tmpReceiverDisplayName,_tmpReceiverPhotoUrl,_tmpReceiverDescription,_tmpLatitude,_tmpLongitude,_tmpTimestamp);
           } else {
             _result = null;
           }

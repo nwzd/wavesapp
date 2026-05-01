@@ -23,7 +23,7 @@ import com.olapp.data.local.entity.UserProfileEntity
         MatchEntity::class,
         BlockedUserEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class OlaDatabase : RoomDatabase() {
@@ -74,6 +74,14 @@ abstract class OlaDatabase : RoomDatabase() {
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE user_profile ADD COLUMN photoIsSelfie INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE received_ola ADD COLUMN senderDescription TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE sent_ola ADD COLUMN receiverDescription TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE match ADD COLUMN otherDescription TEXT NOT NULL DEFAULT ''")
             }
         }
     }

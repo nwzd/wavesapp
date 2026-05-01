@@ -49,16 +49,16 @@ public final class OlaDatabase_Impl extends OlaDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(8) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(9) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `user_profile` (`uid` TEXT NOT NULL, `displayName` TEXT NOT NULL, `contactInfo` TEXT NOT NULL, `photoUrl` TEXT NOT NULL, `bleToken` TEXT NOT NULL, `discoveryEnabled` INTEGER NOT NULL, `description` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `photoIsSelfie` INTEGER NOT NULL, PRIMARY KEY(`uid`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `received_ola` (`id` TEXT NOT NULL, `senderBleToken` TEXT NOT NULL, `senderDisplayName` TEXT NOT NULL, `senderPhotoUrl` TEXT NOT NULL, `senderContactInfo` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `sent_ola` (`id` TEXT NOT NULL, `receiverBleToken` TEXT NOT NULL, `receiverDisplayName` TEXT NOT NULL, `receiverPhotoUrl` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `match` (`id` TEXT NOT NULL, `otherBleToken` TEXT NOT NULL, `otherDisplayName` TEXT NOT NULL, `otherPhotoUrl` TEXT NOT NULL, `otherContactInfo` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `latitude` REAL, `longitude` REAL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `received_ola` (`id` TEXT NOT NULL, `senderBleToken` TEXT NOT NULL, `senderDisplayName` TEXT NOT NULL, `senderPhotoUrl` TEXT NOT NULL, `senderContactInfo` TEXT NOT NULL, `senderDescription` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `sent_ola` (`id` TEXT NOT NULL, `receiverBleToken` TEXT NOT NULL, `receiverDisplayName` TEXT NOT NULL, `receiverPhotoUrl` TEXT NOT NULL, `receiverDescription` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `match` (`id` TEXT NOT NULL, `otherBleToken` TEXT NOT NULL, `otherDisplayName` TEXT NOT NULL, `otherPhotoUrl` TEXT NOT NULL, `otherContactInfo` TEXT NOT NULL, `otherDescription` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `latitude` REAL, `longitude` REAL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `blocked_user` (`bleToken` TEXT NOT NULL, `displayName` TEXT NOT NULL, `blockedAt` INTEGER NOT NULL, PRIMARY KEY(`bleToken`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c7f5781f10b0ddf7cdc408299758c7d')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b27bb33ad21905e801fca813ccf57bc7')");
       }
 
       @Override
@@ -130,12 +130,13 @@ public final class OlaDatabase_Impl extends OlaDatabase {
                   + " Expected:\n" + _infoUserProfile + "\n"
                   + " Found:\n" + _existingUserProfile);
         }
-        final HashMap<String, TableInfo.Column> _columnsReceivedOla = new HashMap<String, TableInfo.Column>(8);
+        final HashMap<String, TableInfo.Column> _columnsReceivedOla = new HashMap<String, TableInfo.Column>(9);
         _columnsReceivedOla.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("senderBleToken", new TableInfo.Column("senderBleToken", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("senderDisplayName", new TableInfo.Column("senderDisplayName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("senderPhotoUrl", new TableInfo.Column("senderPhotoUrl", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("senderContactInfo", new TableInfo.Column("senderContactInfo", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsReceivedOla.put("senderDescription", new TableInfo.Column("senderDescription", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("latitude", new TableInfo.Column("latitude", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("longitude", new TableInfo.Column("longitude", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsReceivedOla.put("timestamp", new TableInfo.Column("timestamp", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -148,11 +149,12 @@ public final class OlaDatabase_Impl extends OlaDatabase {
                   + " Expected:\n" + _infoReceivedOla + "\n"
                   + " Found:\n" + _existingReceivedOla);
         }
-        final HashMap<String, TableInfo.Column> _columnsSentOla = new HashMap<String, TableInfo.Column>(7);
+        final HashMap<String, TableInfo.Column> _columnsSentOla = new HashMap<String, TableInfo.Column>(8);
         _columnsSentOla.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsSentOla.put("receiverBleToken", new TableInfo.Column("receiverBleToken", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsSentOla.put("receiverDisplayName", new TableInfo.Column("receiverDisplayName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsSentOla.put("receiverPhotoUrl", new TableInfo.Column("receiverPhotoUrl", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsSentOla.put("receiverDescription", new TableInfo.Column("receiverDescription", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsSentOla.put("latitude", new TableInfo.Column("latitude", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsSentOla.put("longitude", new TableInfo.Column("longitude", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsSentOla.put("timestamp", new TableInfo.Column("timestamp", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -165,12 +167,13 @@ public final class OlaDatabase_Impl extends OlaDatabase {
                   + " Expected:\n" + _infoSentOla + "\n"
                   + " Found:\n" + _existingSentOla);
         }
-        final HashMap<String, TableInfo.Column> _columnsMatch = new HashMap<String, TableInfo.Column>(8);
+        final HashMap<String, TableInfo.Column> _columnsMatch = new HashMap<String, TableInfo.Column>(9);
         _columnsMatch.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("otherBleToken", new TableInfo.Column("otherBleToken", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("otherDisplayName", new TableInfo.Column("otherDisplayName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("otherPhotoUrl", new TableInfo.Column("otherPhotoUrl", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("otherContactInfo", new TableInfo.Column("otherContactInfo", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatch.put("otherDescription", new TableInfo.Column("otherDescription", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("latitude", new TableInfo.Column("latitude", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatch.put("longitude", new TableInfo.Column("longitude", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -198,7 +201,7 @@ public final class OlaDatabase_Impl extends OlaDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "4c7f5781f10b0ddf7cdc408299758c7d", "d99d610923d3b8b57f5c787122aca2ae");
+    }, "b27bb33ad21905e801fca813ccf57bc7", "1b82a93316240f4dfb260a0f969a7c4b");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

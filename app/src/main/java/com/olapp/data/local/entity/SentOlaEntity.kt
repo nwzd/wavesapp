@@ -10,6 +10,7 @@ data class SentOlaEntity(
     val receiverBleToken: String,
     val receiverDisplayName: String = "",
     val receiverPhotoUrl: String = "",
+    val receiverDescription: String = "",
     val latitude: Double?,
     val longitude: Double?,
     val timestamp: Long = System.currentTimeMillis()

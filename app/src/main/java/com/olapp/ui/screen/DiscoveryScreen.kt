@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.wifi.WifiManager
 import android.provider.Settings
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -37,7 +38,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.WifiTethering
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -96,6 +100,8 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel = hiltViewModel()) {
 
     val prefs = remember { context.getSharedPreferences("olapp_ui", Context.MODE_PRIVATE) }
     var showHowItWorks by remember { mutableStateOf(!prefs.getBoolean("hint_dismissed", false)) }
+    var pendingWaveToken by remember { mutableStateOf<String?>(null) }
+    var waveConfirmDontShow by remember { mutableStateOf(false) }
 
     var bluetoothEnabled by remember {
         mutableStateOf(
@@ -113,6 +119,67 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel = hiltViewModel()) {
         }
         context.registerReceiver(receiver, IntentFilter(android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED))
         onDispose { context.unregisterReceiver(receiver) }
+    }
+
+    var wifiEnabled by remember {
+        mutableStateOf(
+            runCatching {
+                (context.getSystemService(Context.WIFI_SERVICE) as WifiManager).isWifiEnabled
+            }.getOrDefault(true)
+        )
+    }
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                val state = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN)
+                wifiEnabled = state == WifiManager.WIFI_STATE_ENABLED || state == WifiManager.WIFI_STATE_ENABLING
+            }
+        }
+        context.registerReceiver(receiver, IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION))
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+
+    pendingWaveToken?.let { token ->
+        AlertDialog(
+            onDismissRequest = { pendingWaveToken = null; waveConfirmDontShow = false },
+            title = { Text("Just so you know 👋") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "If they wave back, your contact info will be shared with them — and that can't be undone.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { waveConfirmDontShow = !waveConfirmDontShow }
+                    ) {
+                        Checkbox(
+                            checked = waveConfirmDontShow,
+                            onCheckedChange = { waveConfirmDontShow = it },
+                            colors = CheckboxDefaults.colors(checkedColor = Brand)
+                        )
+                        Text(
+                            "Don't show this again",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (waveConfirmDontShow) prefs.edit().putBoolean("wave_confirm_dismissed", true).apply()
+                    viewModel.sendOla(token)
+                    pendingWaveToken = null
+                    waveConfirmDontShow = false
+                }) { Text("Wave 👋", color = Brand, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingWaveToken = null; waveConfirmDontShow = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Column(
@@ -154,6 +221,11 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel = hiltViewModel()) {
                 context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             })
         }
+        if (!wifiEnabled) {
+            WifiOffBanner(onEnable = {
+                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            })
+        }
 
         if (nearbyDevices.isNotEmpty() && showHowItWorks) {
             HowItWorksHint(onDismiss = {
@@ -172,7 +244,12 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel = hiltViewModel()) {
                 items(nearbyDevices, key = { it.bleToken }) { device ->
                     NearbyDeviceCard(
                         device = device,
-                        onSendOla = { viewModel.sendOla(device.bleToken) },
+                        onSendOla = {
+                            if (prefs.getBoolean("wave_confirm_dismissed", false))
+                                viewModel.sendOla(device.bleToken)
+                            else
+                                pendingWaveToken = device.bleToken
+                        },
                         onPhotoZoomed = { viewModel.requestHdPhoto(device.bleToken) },
                         onBlock = { viewModel.blockUser(device.bleToken) }
                     )
@@ -195,13 +272,46 @@ private fun BluetoothOffBanner(onEnable: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(
-            Icons.Default.WifiTethering,
+            Icons.Default.Bluetooth,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
             tint = MaterialTheme.colorScheme.error
         )
         Text(
-            "Bluetooth off — discovery limited to this WiFi network",
+            "Bluetooth is off — discovery requires Bluetooth",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(
+            onClick = onEnable,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+        ) {
+            Text("Enable", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
+private fun WifiOffBanner(onEnable: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.18f))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            Icons.Default.Wifi,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.error
+        )
+        Text(
+            "Wi-Fi is off — turn it on (no network or data needed, just the radio)",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
@@ -271,7 +381,7 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
                 )
             ) {
                 Icon(
-                    Icons.Default.WifiTethering, null, Modifier.size(28.dp),
+                    Icons.Default.Bluetooth, null, Modifier.size(28.dp),
                     if (discoveryEnabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -284,7 +394,7 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
             )
             Text(
                 if (discoveryEnabled)
-                    "Scanning nearby… people appear as they're found. Same WiFi is instant; Bluetooth reaches further."
+                    "Scanning nearby… stay within ~10 m. Both devices need Bluetooth and Wi-Fi on — no network or data needed."
                 else
                     "Turn on discovery to see people around you.",
                 style = MaterialTheme.typography.bodySmall,

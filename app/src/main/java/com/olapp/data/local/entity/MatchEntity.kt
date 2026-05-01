@@ -11,6 +11,7 @@ data class MatchEntity(
     val otherDisplayName: String,
     val otherPhotoUrl: String,
     val otherContactInfo: String,
+    val otherDescription: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val latitude: Double? = null,
     val longitude: Double? = null

@@ -115,7 +115,7 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Delete $n wave${if (n > 1) "s" else ""}?") },
-            text = { Text("Since there's no server, the other person's copy is unaffected.") },
+            text = { Text("Due to the peer-to-peer architecture, your wave might still be processed by the recipient's device") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -257,6 +257,7 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
             WaveDetailSheet(
                 name = ola.senderDisplayName.ifEmpty { "Someone nearby" },
                 photoPath = ola.senderPhotoUrl,
+                bio = ola.senderDescription,
                 timestamp = ola.timestamp,
                 isReceived = true,
                 onRespond = {
@@ -274,6 +275,7 @@ fun OlasScreen(viewModel: OlaViewModel = hiltViewModel()) {
             WaveDetailSheet(
                 name = ola.receiverDisplayName.ifEmpty { "Someone nearby" },
                 photoPath = ola.receiverPhotoUrl,
+                bio = ola.receiverDescription,
                 timestamp = ola.timestamp,
                 isReceived = false,
                 onRespond = {},
@@ -444,6 +446,7 @@ private fun SentWaveCard(
 private fun WaveDetailSheet(
     name: String,
     photoPath: String,
+    bio: String,
     timestamp: Long,
     isReceived: Boolean,
     onRespond: () -> Unit,
@@ -469,6 +472,15 @@ private fun WaveDetailSheet(
             ProfileAvatar(photoPath = photoPath, name = name, size = 80.dp)
             Spacer(Modifier.height(16.dp))
             Text(name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            if (bio.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    bio,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
             Spacer(Modifier.height(6.dp))
             Box(
                 modifier = Modifier
