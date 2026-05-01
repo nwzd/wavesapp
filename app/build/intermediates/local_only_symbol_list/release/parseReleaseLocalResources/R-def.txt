@@ -1,0 +1,19 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_instagram
+drawable ic_launcher
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+drawable ic_notification
+drawable ic_x_twitter
+mipmap ic_launcher
+mipmap ic_launcher_fg
+mipmap ic_launcher_round
+string app_name
+string ble_notification_channel_id
+string ble_notification_channel_name
+string ble_notification_text
+string ola_notification_channel_id
+string ola_notification_channel_name
+style Theme.OlaApp
+xml file_paths

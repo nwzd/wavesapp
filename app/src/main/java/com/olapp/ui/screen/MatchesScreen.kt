@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -126,7 +127,8 @@ fun MatchesScreen(viewModel: OlaViewModel = hiltViewModel()) {
             onDelete = {
                 detailMatch = null
                 viewModel.deleteMatches(listOf(match))
-            }
+            },
+            onPhotoZoomed = { viewModel.requestHdPhoto(match.otherBleToken) }
         )
     }
 
@@ -314,7 +316,8 @@ private fun MatchCard(
 private fun VibeDetailSheet(
     match: Match,
     onDismiss: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPhotoZoomed: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val name = match.otherDisplayName.ifEmpty { "Anonymous" }
@@ -324,12 +327,16 @@ private fun VibeDetailSheet(
         ContactParser.parse(match.otherContactInfo)
     }
     var hdPhotoPath by remember(match.otherBleToken) { mutableStateOf<String?>(null) }
+    var isLoadingHd by remember(match.otherBleToken) { mutableStateOf(false) }
     LaunchedEffect(match.otherBleToken) {
         val hdFile = File(context.filesDir, "peer_photos/${match.otherBleToken}_hd.jpg")
-        repeat(10) {
-            if (hdFile.exists()) { hdPhotoPath = hdFile.absolutePath; return@LaunchedEffect }
+        if (hdFile.exists()) { hdPhotoPath = hdFile.absolutePath; return@LaunchedEffect }
+        isLoadingHd = true
+        repeat(30) {
+            if (hdFile.exists()) { hdPhotoPath = hdFile.absolutePath; isLoadingHd = false; return@LaunchedEffect }
             delay(600)
         }
+        isLoadingHd = false
     }
     val photoToShow = hdPhotoPath ?: match.otherPhotoUrl
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -392,7 +399,24 @@ private fun VibeDetailSheet(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ProfileAvatar(photoPath = photoToShow, name = name, size = 100.dp)
+                    Box(contentAlignment = Alignment.Center) {
+                        ProfileAvatar(photoPath = photoToShow, name = name, size = 100.dp, onZoomed = onPhotoZoomed)
+                        if (isLoadingHd) {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.35f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(30.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                    }
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(3.dp)

@@ -415,30 +415,30 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_olapp_ui_viewmodel_MainViewModel = "com.olapp.ui.viewmodel.MainViewModel";
-
       static String com_olapp_ui_viewmodel_OlaViewModel = "com.olapp.ui.viewmodel.OlaViewModel";
-
-      static String com_olapp_ui_viewmodel_ProfileViewModel = "com.olapp.ui.viewmodel.ProfileViewModel";
-
-      static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
 
       static String com_olapp_ui_viewmodel_DiscoveryViewModel = "com.olapp.ui.viewmodel.DiscoveryViewModel";
 
-      @KeepFieldType
-      MainViewModel com_olapp_ui_viewmodel_MainViewModel2;
+      static String com_olapp_ui_viewmodel_ProfileViewModel = "com.olapp.ui.viewmodel.ProfileViewModel";
+
+      static String com_olapp_ui_viewmodel_MainViewModel = "com.olapp.ui.viewmodel.MainViewModel";
+
+      static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
 
       @KeepFieldType
       OlaViewModel com_olapp_ui_viewmodel_OlaViewModel2;
 
       @KeepFieldType
+      DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
+
+      @KeepFieldType
       ProfileViewModel com_olapp_ui_viewmodel_ProfileViewModel2;
 
       @KeepFieldType
-      SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
+      MainViewModel com_olapp_ui_viewmodel_MainViewModel2;
 
       @KeepFieldType
-      DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
+      SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
     }
   }
 
@@ -491,6 +491,8 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
+      static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
+
       static String com_olapp_ui_viewmodel_DiscoveryViewModel = "com.olapp.ui.viewmodel.DiscoveryViewModel";
 
       static String com_olapp_ui_viewmodel_MainViewModel = "com.olapp.ui.viewmodel.MainViewModel";
@@ -499,7 +501,8 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
       static String com_olapp_ui_viewmodel_OlaViewModel = "com.olapp.ui.viewmodel.OlaViewModel";
 
-      static String com_olapp_ui_viewmodel_SetupViewModel = "com.olapp.ui.viewmodel.SetupViewModel";
+      @KeepFieldType
+      SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
 
       @KeepFieldType
       DiscoveryViewModel com_olapp_ui_viewmodel_DiscoveryViewModel2;
@@ -512,9 +515,6 @@ public final class DaggerOlaApplication_HiltComponents_SingletonC {
 
       @KeepFieldType
       OlaViewModel com_olapp_ui_viewmodel_OlaViewModel2;
-
-      @KeepFieldType
-      SetupViewModel com_olapp_ui_viewmodel_SetupViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {

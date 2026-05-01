@@ -1,98 +1,106 @@
 [
     {
-        "merged": "com.olapp-debug-72:/mipmap-mdpi_ic_launcher_fg.png.flat",
-        "source": "com.olapp-main-74:/mipmap-mdpi/ic_launcher_fg.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xxxhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xhdpi_ic_launcher_fg.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xhdpi/ic_launcher_fg.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/drawable_ic_launcher_background.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/drawable/ic_launcher_background.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xxxhdpi_ic_launcher_fg.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xxxhdpi/ic_launcher_fg.png"
+    },
+    {
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-hdpi_ic_launcher_fg.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-hdpi/ic_launcher_fg.png"
     },
     {
         "merged": "com.olapp-debug-72:/mipmap-anydpi-v26_ic_launcher.xml.flat",
         "source": "com.olapp-main-74:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xxxhdpi_ic_launcher_fg.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xxxhdpi/ic_launcher_fg.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/xml_file_paths.xml.flat",
-        "source": "com.olapp-main-74:/xml/file_paths.xml"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-mdpi/ic_launcher.png"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "com.olapp-main-74:/mipmap-mdpi/ic_launcher.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/drawable_ic_launcher.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/drawable/ic_launcher.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/drawable_ic_launcher_background.xml.flat",
-        "source": "com.olapp-main-74:/drawable/ic_launcher_background.xml"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/xml_file_paths.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/xml/file_paths.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-hdpi_ic_launcher_fg.png.flat",
-        "source": "com.olapp-main-74:/mipmap-hdpi/ic_launcher_fg.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xhdpi_ic_launcher_fg.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xhdpi/ic_launcher_fg.png"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xhdpi/ic_launcher.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.olapp-debug-72:/drawable_ic_instagram.png.flat",
-        "source": "com.olapp-main-74:/drawable/ic_instagram.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-mdpi_ic_launcher_fg.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-mdpi/ic_launcher_fg.png"
     },
     {
-        "merged": "com.olapp-debug-72:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.olapp-main-74:/drawable/ic_launcher_foreground.xml"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xxhdpi_ic_launcher_fg.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xxhdpi/ic_launcher_fg.png"
     },
     {
-        "merged": "com.olapp-debug-72:/drawable_ic_launcher.xml.flat",
-        "source": "com.olapp-main-74:/drawable/ic_launcher.xml"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-mdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xxxhdpi/ic_launcher.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.olapp-debug-72:/drawable_ic_x_twitter.png.flat",
-        "source": "com.olapp-main-74:/drawable/ic_x_twitter.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xxhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.olapp-debug-72:/drawable_ic_notification.xml.flat",
-        "source": "com.olapp-main-74:/drawable/ic_notification.xml"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "com.olapp-main-74:/mipmap-hdpi/ic_launcher.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/drawable_ic_notification.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/drawable/ic_notification.xml"
+    },
+    {
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/drawable_ic_instagram.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/drawable/ic_instagram.png"
+    },
+    {
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-hdpi/ic_launcher_round.png"
     },
     {
         "merged": "com.olapp-debug-72:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
         "source": "com.olapp-main-74:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-hdpi_ic_launcher_round.png.flat",
-        "source": "com.olapp-main-74:/mipmap-hdpi/ic_launcher_round.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-xxhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-mdpi_ic_launcher_round.png.flat",
-        "source": "com.olapp-main-74:/mipmap-mdpi/ic_launcher_round.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/drawable_ic_x_twitter.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/drawable/ic_x_twitter.png"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xxhdpi_ic_launcher_round.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xxhdpi/ic_launcher_round.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/drawable/ic_launcher_foreground.xml"
     },
     {
-        "merged": "com.olapp-debug-72:/mipmap-xxhdpi_ic_launcher_fg.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xxhdpi/ic_launcher_fg.png"
-    },
-    {
-        "merged": "com.olapp-debug-72:/mipmap-xhdpi_ic_launcher_round.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xhdpi/ic_launcher_round.png"
-    },
-    {
-        "merged": "com.olapp-debug-72:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
-        "source": "com.olapp-main-74:/mipmap-xxxhdpi/ic_launcher_round.png"
+        "merged": "/home/wsx/.gradle/daemon/8.7/com.olapp-debug-72:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "/home/wsx/.gradle/daemon/8.7/com.olapp-main-74:/mipmap-hdpi/ic_launcher.png"
     }
 ]

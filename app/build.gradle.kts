@@ -13,7 +13,7 @@ android {
         applicationId = "me.waveandvibe.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
 
         ksp {
@@ -25,11 +25,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("/home/wsx/waveandvibe.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = "waveandvibe"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
