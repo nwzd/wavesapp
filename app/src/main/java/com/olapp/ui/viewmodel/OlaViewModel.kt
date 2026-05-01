@@ -124,6 +124,11 @@ class OlaViewModel @Inject constructor(
         viewModelScope.launch { userRepository.deleteMatch(matchId, otherBleToken) }
     }
 
+    fun requestHdPhoto(bleToken: String) {
+        nearbyManager.endpointIdForToken(bleToken)
+            ?.let { nearbyManager.requestHdPhoto(it) }
+    }
+
     fun deleteMatches(targets: List<Match>) {
         viewModelScope.launch { targets.forEach { userRepository.deleteMatch(it.id, it.otherBleToken) } }
     }

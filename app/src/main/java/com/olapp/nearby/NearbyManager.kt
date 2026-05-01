@@ -53,12 +53,12 @@ private const val MSG_MATCH_LOC     = "L"   // match location share — sent aft
 private const val MSG_MATCH_CONFIRM = "MC"  // sent by whoever detects mutual match; other side creates their match
 private const val MSG_BLOCK         = "BL"  // sent to notify a peer they have been blocked
 
-// Thumbnail: very small, arrives in <100 ms — keeps discovery instant
-private const val THUMB_MAX_PX       = 40
-private const val THUMB_JPEG_QUALITY = 20
+// Thumbnail: fast first impression
+private const val THUMB_MAX_PX       = 120
+private const val THUMB_JPEG_QUALITY = 55
 // Standard photo: decent quality, sent after a short delay
-private const val PHOTO_MAX_PX       = 128
-private const val PHOTO_JPEG_QUALITY = 70
+private const val PHOTO_MAX_PX       = 512
+private const val PHOTO_JPEG_QUALITY = 75
 private const val PHOTO_DELAY_MS     = 100L
 // Refresh BLE scan periodically to catch newly arrived peers
 private const val SCAN_REFRESH_MS       = 5_000L   // regular refresh cadence
@@ -66,8 +66,8 @@ private const val SCAN_EARLY_REFRESH_MS = 2_000L   // quick second scan after st
 private const val SCAN_RESTART_GAP_MS  =    50L   // gap between stop and start discovery
 private const val RETRY_DELAY_MS        = 2_000L   // retry failed connection attempts
 // HD photo: only sent on demand when the other user zooms in
-private const val PHOTO_HD_MAX_PX       = 400
-private const val PHOTO_HD_JPEG_QUALITY = 85
+private const val PHOTO_HD_MAX_PX       = 1024
+private const val PHOTO_HD_JPEG_QUALITY = 90
 
 data class PendingPeer(val bleToken: String, val displayName: String)
 
@@ -276,6 +276,13 @@ class NearbyManager @Inject constructor(
             put("d", profile.description)
         }
         send(endpointId, msg.toString())
+        // Push HD photo immediately — same connection, before any scan refresh drops it
+        cachedHdJson?.let { send(endpointId, it) }
+        // Nothing left to exchange — free the connection slot for new people
+        scope.launch {
+            delay(10_000)
+            runCatching { client.disconnectFromEndpoint(endpointId) }
+        }
     }
 
     fun addBlockedToken(token: String) {
@@ -355,8 +362,8 @@ class NearbyManager @Inject constructor(
             // info.endpointName = the connecting peer's myToken (from requestConnection handshake,
             // NOT from BLE advertisement). Filter matched/blocked before accepting.
             val peerToken = info.endpointName.takeIf { it.isNotEmpty() && it != ANON_ENDPOINT_NAME }
-            if (peerToken != null && (peerToken in matchedTokens || peerToken in blockedTokens)) {
-                Log.d(TAG, "Rejecting $endpointId — already matched or blocked ($peerToken)")
+            if (peerToken != null && (peerToken == myToken || peerToken in blockedTokens)) {
+                Log.d(TAG, "Rejecting $endpointId — self or blocked ($peerToken)")
                 runCatching { client.disconnectFromEndpoint(endpointId) }
                 return
             }
@@ -437,18 +444,18 @@ class NearbyManager @Inject constructor(
         val contact     = json.optString("c")
         val isSelfie    = json.optInt("s", 0) == 1
 
+        if (token == myToken) {
+            Log.d(TAG, "Self-connection detected — disconnecting")
+            runCatching { client.disconnectFromEndpoint(endpointId) }
+            return
+        }
         if (token in blockedTokens) {
             Log.d(TAG, "Blocked token connected: $token — rejecting")
             sendBlockMessage(endpointId)
             scope.launch { delay(500); runCatching { client.disconnectFromEndpoint(endpointId) } }
             return
         }
-        if (token in matchedTokens) {
-            Log.d(TAG, "Already matched with $token — disconnecting")
-            _pendingEndpoints.update { it - endpointId }
-            scope.launch { delay(200); runCatching { client.disconnectFromEndpoint(endpointId) } }
-            return
-        }
+        // Matched peers are allowed to reconnect — they show in nearby with Vibing status
 
         // Legacy full-profile may include photo inline
         val photoPath = json.optString("photo").takeIf { it.isNotEmpty() }
@@ -504,6 +511,13 @@ class NearbyManager @Inject constructor(
         val photo   = _peers.value[endpointId]?.photoPath
         Log.d(TAG, "Match confirmation from $tok ($name)")
         matchConfirmReceived.tryEmit(MatchConfirmData(tok, name, contact, photo, desc))
+        // Send our HD photo back — peer may not have it yet
+        cachedHdJson?.let { send(endpointId, it) }
+        // Nothing left to exchange — free the connection slot for new people
+        scope.launch {
+            delay(10_000)
+            runCatching { client.disconnectFromEndpoint(endpointId) }
+        }
     }
 
     private fun handleBlock(json: JSONObject) {

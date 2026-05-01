@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Gradient circle background -->
+    <path android:pathData="M24,0 A24,24 0 1,1 24,48 A24,24 0 1,1 24,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="48"
+                android:endY="48">
+                <item android:offset="0" android:color="#FF0EA5E9"/>
+                <item android:offset="1" android:color="#FFA855F7"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!--
+        One bold S-curve sine wave spanning the full icon.
+        M 3,24  — start left, vertically centred
+        C 9,12 15,12 24,24  — rises to peak (amplitude 12)
+        C 33,36 39,36 45,24 — falls to trough, returns to centre
+    -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:pathData="M 3,24 C 9,12 15,12 24,24 C 33,36 39,36 45,24"/>
+
+</vector>

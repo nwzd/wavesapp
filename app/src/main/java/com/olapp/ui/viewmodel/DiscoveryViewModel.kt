@@ -94,7 +94,7 @@ class DiscoveryViewModel @Inject constructor(
                     )
                 }
 
-                devices.values.filter { it.status == WaveStatus.NONE }.toList()
+                devices.values.toList()
             }.collect { _nearbyDevices.value = it }
         }
     }
