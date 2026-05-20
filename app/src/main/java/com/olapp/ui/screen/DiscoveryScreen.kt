@@ -77,6 +77,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -375,26 +376,23 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(60.dp).clip(CircleShape).background(
+                modifier = Modifier.size(72.dp).clip(CircleShape).background(
                     if (discoveryEnabled) Brush.linearGradient(LogoGradient)
                     else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
                 )
             ) {
-                Icon(
-                    Icons.Default.Bluetooth, null, Modifier.size(28.dp),
-                    if (discoveryEnabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(if (discoveryEnabled) "👋" else "👁", fontSize = 30.sp)
             }
             Spacer(Modifier.height(2.dp))
             Text(
-                if (discoveryEnabled) "Looking around…" else "Discovery off",
+                if (discoveryEnabled) "Who's here with you?" else "Discovery off",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
             Text(
                 if (discoveryEnabled)
-                    "Scanning nearby… stay within ~10 m. Both devices need Bluetooth and Wi-Fi on — no network or data needed."
+                    "Scanning for people within ~10 m. Both devices need Bluetooth and Wi-Fi on."
                 else
                     "Turn on discovery to see people around you.",
                 style = MaterialTheme.typography.bodySmall,
@@ -444,36 +442,34 @@ private fun NearbyDeviceCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                enabled = !device.isPending,
-                onClick = { showProfile = true }
-            ),
-        shape = RoundedCornerShape(16.dp),
+            .clickable(enabled = !device.isPending, onClick = { showProfile = true }),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            PeerAvatar(device = device, size = 50.dp, onZoomed = onPhotoZoomed)
+            PeerAvatar(device = device, size = 62.dp, onZoomed = onPhotoZoomed)
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
                     device.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
                 Text(
                     when {
                         device.isPending                      -> "Connecting…"
                         device.status == WaveStatus.WAVE_SENT -> "Waiting for their wave…"
-                        device.status == WaveStatus.MATCHED   -> "You're vibing"
+                        device.status == WaveStatus.MATCHED   -> "You're vibing ✦"
                         device.description.isNotBlank()       -> device.description
-                        else                                  -> "Tap to see profile"
+                        else                                  -> "Nearby"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = when (device.status) {
@@ -488,22 +484,9 @@ private fun NearbyDeviceCard(
             if (device.isPending) {
                 StatusChip(text = "•••", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             } else when (device.status) {
-                WaveStatus.NONE -> Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { showBlockDialog = true }, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Default.Block,
-                            contentDescription = "Block",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    GradientButton(text = "Wave", onClick = onSendOla)
-                }
+                WaveStatus.NONE      -> GradientButton(text = "Wave 👋", onClick = onSendOla)
                 WaveStatus.WAVE_SENT -> StatusChip(text = "Waved ✓", tint = Indigo)
-                WaveStatus.MATCHED   -> StatusChip(text = "Vibing", tint = Brand)
+                WaveStatus.MATCHED   -> GradientStatusChip(text = "Vibing")
             }
         }
     }
@@ -708,6 +691,19 @@ private fun ZoomablePhotoDialog(
 }
 
 @Composable
+private fun GradientStatusChip(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50.dp))
+            .background(Brush.linearGradient(LogoGradient))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
 private fun StatusChip(text: String, tint: Color) {
     Box(
         modifier = Modifier
@@ -732,7 +728,7 @@ fun GradientButton(text: String, onClick: () -> Unit, modifier: Modifier = Modif
         Box(
             modifier = Modifier
                 .background(Brush.linearGradient(listOf(Brand, Tangerine)), RoundedCornerShape(50.dp))
-                .padding(horizontal = 18.dp, vertical = 9.dp),
+                .padding(horizontal = 22.dp, vertical = 11.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(text, style = MaterialTheme.typography.labelLarge, color = Color.White)

@@ -2,6 +2,7 @@ package com.olapp.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -65,6 +66,29 @@ private val AppColors = lightColorScheme(
     onError              = Color.White,
 )
 
+private val DarkColors = darkColorScheme(
+    primary              = Brand,
+    onPrimary            = Color.White,
+    primaryContainer     = BrandDeep,
+    onPrimaryContainer   = BrandSoft,
+    secondary            = Indigo,
+    onSecondary          = Color.White,
+    secondaryContainer   = Color(0xFF1E1B4B),
+    onSecondaryContainer = Color(0xFFC7D2FE),
+    tertiary             = Tangerine,
+    onTertiary           = Color.White,
+    background           = Color(0xFF0F172A),
+    onBackground         = Color.White,
+    surface              = Color(0xFF1E293B),
+    onSurface            = Color.White,
+    surfaceVariant       = Color(0xFF1E293B),
+    onSurfaceVariant     = Color(0xFF94A3B8),
+    outline              = Color(0xFF334155),
+    outlineVariant       = Color(0xFF1E293B),
+    error                = Color(0xFFF87171),
+    onError              = Color.White,
+)
+
 private val AppTypography = Typography(
     headlineLarge  = TextStyle(fontWeight = FontWeight.Black,    fontSize = 34.sp, letterSpacing = (-1.0).sp),
     headlineMedium = TextStyle(fontWeight = FontWeight.Bold,     fontSize = 26.sp, letterSpacing = (-0.5).sp),
@@ -81,6 +105,10 @@ private val AppTypography = Typography(
 )
 
 @Composable
-fun OlaTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = AppColors, typography = AppTypography, content = content)
+fun OlaTheme(darkTheme: Boolean = false, content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = if (darkTheme) DarkColors else AppColors,
+        typography = AppTypography,
+        content = content
+    )
 }

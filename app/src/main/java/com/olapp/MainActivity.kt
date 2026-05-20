@@ -58,10 +58,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            OlaTheme {
-                val viewModel: MainViewModel = hiltViewModel()
-                val state by viewModel.uiState.collectAsState()
-
+            val viewModel: MainViewModel = hiltViewModel()
+            val state by viewModel.uiState.collectAsState()
+            val isDarkMode by viewModel.isDarkMode.collectAsState()
+            OlaTheme(darkTheme = isDarkMode) {
                 when (state) {
                     MainUiState.Loading -> Box(
                         modifier = Modifier
