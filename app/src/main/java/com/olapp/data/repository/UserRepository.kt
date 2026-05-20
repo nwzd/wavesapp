@@ -217,6 +217,10 @@ class UserRepository @Inject constructor(
 
     suspend fun getBlockedTokens(): Set<String> = blockedUserDao.getAllTokens().toHashSet()
 
+    fun observeBlockedUsers() = blockedUserDao.observeAll()
+
+    suspend fun unblockUser(token: String) = blockedUserDao.deleteByToken(token)
+
     suspend fun clearAll() {
         matchDao.deleteAll()
         receivedOlaDao.deleteAll()

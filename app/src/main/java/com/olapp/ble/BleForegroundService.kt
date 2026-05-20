@@ -39,15 +39,17 @@ import kotlin.coroutines.resume
 private const val TAG = "BleForegroundService"
 private const val NOTIF_ID = 1001
 private const val NOTIF_ID_NEARBY = 1002   // single aggregated nearby notification
-private const val NOTIF_ID_OLA_BASE   = 2000
-private const val NOTIF_ID_MATCH_BASE = 3000
+private const val NOTIF_ID_OLA_BASE      = 2000
+private const val NOTIF_ID_MATCH_BASE    = 3000
+private const val NOTIF_ID_REUNION_BASE  = 4000
 private const val EVICT_INTERVAL_MS          = 60 * 60 * 1000L
 private const val RECEIVED_OLA_TTL_MS        = 30L * 24 * 60 * 60 * 1000L
 private const val SENT_OLA_TTL_MS            = 30L * 24 * 60 * 60 * 1000L
 private const val SERVICE_CHANNEL = "ola_ble"
-private const val OLA_CHANNEL = "ola_received"
-private const val MATCH_CHANNEL = "ola_match"
-private const val NEARBY_CHANNEL = "ola_nearby"
+private const val OLA_CHANNEL     = "ola_received"
+private const val MATCH_CHANNEL   = "ola_match"
+private const val NEARBY_CHANNEL  = "ola_nearby"
+private const val REUNION_CHANNEL = "ola_reunion"
 private const val QUIET_HOUR_START = 22
 private const val QUIET_HOUR_END   = 8
 // Brand blue in ARGB for notification accent
@@ -70,7 +72,6 @@ class BleForegroundService : Service() {
     private var evictJob: Job? = null
     private var nearbyJob: Job? = null
     private var matchConfirmJob: Job? = null
-    private var blockReceivedJob: Job? = null
 
     private val notifiedOlaTokens    = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
     private val notifiedMatchTokens  = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
@@ -162,9 +163,10 @@ class BleForegroundService : Service() {
         nearbyJob = scope.launch {
             nearbyManager.peers.collect { peers ->
                 val newPeers = peers.values.filter { notifiedNearbyTokens.add(it.bleToken) }
-                if (newPeers.isNotEmpty() && !isQuietHours()) {
-                    showNearbyNotification(notifiedNearbyTokens.size, newPeers.first().displayName)
-                }
+                if (newPeers.isEmpty() || isQuietHours()) return@collect
+                val (reunions, strangers) = newPeers.partition { userRepository.hasMatchWith(it.bleToken) }
+                reunions.forEach { showReunionNotification(it.bleToken, it.displayName) }
+                if (strangers.isNotEmpty()) showNearbyNotification(notifiedNearbyTokens.size, strangers.first().displayName)
             }
         }
 
@@ -172,18 +174,6 @@ class BleForegroundService : Service() {
         scope.launch {
             nearbyManager.blockedTokens = userRepository.getBlockedTokens()
         }
-        scope.launch {
-            nearbyManager.blockScore = appPreferences.getBlockScore()
-        }
-
-        blockReceivedJob = scope.launch {
-            nearbyManager.blockReceivedFlow.collect { fromToken ->
-                val count = appPreferences.addBlockReceivedFrom(fromToken)
-                nearbyManager.blockScore = count
-                Log.d(TAG, "Block score updated: $count (from $fromToken)")
-            }
-        }
-
         matchConfirmJob = scope.launch {
             nearbyManager.matchConfirmReceived.collect { data ->
                 if (!userRepository.hasMatchWith(data.token)) {
@@ -218,6 +208,7 @@ class BleForegroundService : Service() {
                 notifiedNearbyTokens.clear()
                 nearbyNotifShownThisSession = false
                 getSystemService(NotificationManager::class.java).cancel(NOTIF_ID_NEARBY)
+                nearbyManager.clearOlaState()
                 Log.d(TAG, "Notification state cleared")
             }
         }
@@ -234,7 +225,6 @@ class BleForegroundService : Service() {
         evictJob?.cancel()
         nearbyJob?.cancel()
         matchConfirmJob?.cancel()
-        blockReceivedJob?.cancel()
         serviceJob.cancel()
         nearbyManager.stop()
         Log.d(TAG, "Service destroyed")
@@ -395,6 +385,22 @@ class BleForegroundService : Service() {
 
     // Single aggregated nearby notification — always reuses NOTIF_ID_NEARBY.
     // totalSeen = total unique tokens seen this session; firstName = first new arrival's name.
+    private fun showReunionNotification(token: String, name: String) {
+        if (!hasNotifPermission()) return
+        val notifId = NOTIF_ID_REUNION_BASE + (token.hashCode().and(0x7FFFFFFF) % 1000)
+        val displayName = name.ifBlank { "Someone you vibed with" }
+        val notif = NotificationCompat.Builder(this, REUNION_CHANNEL)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(BRAND_COLOR)
+            .setContentTitle("$displayName is nearby again")
+            .setContentText("You've vibed before — they're here with you")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(mainActivityIntent(notifId))
+            .build()
+        getSystemService(NotificationManager::class.java).notify(notifId, notif)
+    }
+
     private fun showNearbyNotification(totalSeen: Int, firstName: String) {
         if (!hasNotifPermission()) return
         val name = firstName.ifBlank { "Someone" }
@@ -473,6 +479,12 @@ class BleForegroundService : Service() {
                 NotificationChannel(NEARBY_CHANNEL, "Someone nearby",
                     NotificationManager.IMPORTANCE_DEFAULT).apply {
                         description = "A new person is nearby"
+                    }
+            )
+            nm.createNotificationChannel(
+                NotificationChannel(REUNION_CHANNEL, "Reunion nearby",
+                    NotificationManager.IMPORTANCE_DEFAULT).apply {
+                        description = "Someone you vibed with is nearby again"
                     }
             )
         }

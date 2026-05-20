@@ -51,7 +51,6 @@ private const val MSG_PROFILE       = "P"   // legacy full profile (handle if re
 private const val MSG_OLA           = "O"
 private const val MSG_MATCH_LOC     = "L"   // match location share — sent after match is created
 private const val MSG_MATCH_CONFIRM = "MC"  // sent by whoever detects mutual match; other side creates their match
-private const val MSG_BLOCK         = "BL"  // sent to notify a peer they have been blocked
 
 // Thumbnail: fast first impression
 private const val THUMB_MAX_PX       = 120
@@ -105,13 +104,11 @@ class NearbyManager @Inject constructor(
     val olaReceived = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 8)
     val locationReceived = MutableSharedFlow<Triple<String, Double, Double>>(extraBufferCapacity = 8)
     val matchConfirmReceived = MutableSharedFlow<MatchConfirmData>(extraBufferCapacity = 8)
-    val blockReceivedFlow = MutableSharedFlow<String>(extraBufferCapacity = 8)
 
     @Volatile var myToken: String = ""
     @Volatile var myDisplayName: String = ""
     @Volatile var matchedTokens: Set<String> = emptySet()
     @Volatile var blockedTokens: Set<String> = emptySet()
-    @Volatile var blockScore: Int = 0
     @Volatile private var currentProfile: UserProfile? = null
     private var scanRefreshJob: Job? = null
 
@@ -156,22 +153,9 @@ class NearbyManager @Inject constructor(
         currentProfile = profile
         runCatching { client.stopAdvertising() }
         runCatching { client.stopDiscovery() }
-        if (shouldAdvertise()) doStartAdvertising()
-        else Log.d(TAG, "Advertising suppressed (blockScore=$blockScore)")
+        doStartAdvertising()
         doStartDiscovery()
         startScanRefresh()
-    }
-
-    private fun shouldAdvertise(): Boolean {
-        val probability = when (blockScore) {
-            0    -> 1.00
-            1    -> 0.75
-            2    -> 0.50
-            3    -> 0.25
-            4    -> 0.10
-            else -> 0.05
-        }
-        return Math.random() < probability
     }
 
     fun stop() {
@@ -232,6 +216,14 @@ class NearbyManager @Inject constructor(
         sentOlaTokensThisConn.remove(bleToken)
     }
 
+    // Called when the user clears all local data — reset all wave state so new waves
+    // can flow immediately without waiting for a reconnect.
+    fun clearOlaState() {
+        sentOlaTokensThisConn.clear()
+        pendingOlaTokens.clear()
+        matchedTokens = emptySet()
+    }
+
     // Retry all pending OLAs against currently connected peers.
     fun flushPendingOlas() {
         for (token in pendingOlaTokens.toList()) flushPendingOla(token)
@@ -288,12 +280,11 @@ class NearbyManager @Inject constructor(
     fun addBlockedToken(token: String) {
         blockedTokens = blockedTokens + token
         pendingOlaTokens.remove(token)
-        val eid = _peers.value.values.find { it.bleToken == token }?.endpointId
         _peers.update { map -> map.filterValues { it.bleToken != token } }
-        if (eid != null) {
-            sendBlockMessage(eid)
-            scope.launch { delay(500); runCatching { client.disconnectFromEndpoint(eid) } }
-        }
+    }
+
+    fun removeBlockedToken(token: String) {
+        blockedTokens = blockedTokens - token
     }
 
     fun endpointIdForToken(token: String): String? =
@@ -302,7 +293,7 @@ class NearbyManager @Inject constructor(
     fun isTokenInRange(token: String): Boolean =
         _peers.value.values.any { it.bleToken == token }
 
-    private val retryCount = mutableMapOf<String, Int>()
+    private val retryCount = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
     private fun retryConnection(endpointId: String) {
         val attempts = retryCount.getOrDefault(endpointId, 0)
@@ -314,7 +305,8 @@ class NearbyManager @Inject constructor(
         retryCount[endpointId] = attempts + 1
         scope.launch {
             delay(RETRY_DELAY_MS)
-            client.requestConnection(myToken, endpointId, connectionLifecycleCallback)
+            val localName = myDisplayName.ifBlank { "Wave & Vibe" }
+            client.requestConnection(localName, endpointId, connectionLifecycleCallback)
                 .addOnSuccessListener { retryCount.remove(endpointId) }
                 .addOnFailureListener { Log.w(TAG, "retry $attempts failed $endpointId: $it") }
         }
@@ -326,7 +318,8 @@ class NearbyManager @Inject constructor(
 
     private fun doStartAdvertising() {
         val opts = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
-        client.startAdvertising(ANON_ENDPOINT_NAME, SERVICE_ID, connectionLifecycleCallback, opts)
+        val advertisingName = myDisplayName.ifBlank { "Wave & Vibe" }
+        client.startAdvertising(advertisingName, SERVICE_ID, connectionLifecycleCallback, opts)
             .addOnSuccessListener { Log.d(TAG, "Advertising started") }
             .addOnFailureListener { Log.e(TAG, "Advertising failed: $it") }
     }
@@ -344,14 +337,24 @@ class NearbyManager @Inject constructor(
 
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback() {
         override fun onEndpointFound(endpointId: String, info: DiscoveredEndpointInfo) {
+            if (_peers.value.containsKey(endpointId) || _pendingEndpoints.value.containsKey(endpointId)) {
+                Log.d(TAG, "Skipping $endpointId — already connected or pending")
+                return
+            }
             Log.d(TAG, "Found $endpointId — connecting to exchange identity")
-            client.requestConnection(myToken, endpointId, connectionLifecycleCallback)
-                .addOnFailureListener { Log.w(TAG, "requestConnection $endpointId: $it") }
+            _pendingEndpoints.update { it + (endpointId to PendingPeer("", info.endpointName)) }
+            val localName = myDisplayName.ifBlank { "Wave & Vibe" }
+            client.requestConnection(localName, endpointId, connectionLifecycleCallback)
+                .addOnFailureListener { e ->
+                    _pendingEndpoints.update { it - endpointId }
+                    Log.w(TAG, "requestConnection $endpointId: $e")
+                }
         }
 
         override fun onEndpointLost(endpointId: String) {
             Log.d(TAG, "Endpoint lost: $endpointId")
-            _peers.update { it - endpointId }
+            // Only remove from pending — if a full connection was established, keep it in _peers
+            // until onDisconnected fires (which is the actual connection drop event).
             _pendingEndpoints.update { it - endpointId }
         }
     }
@@ -359,15 +362,16 @@ class NearbyManager @Inject constructor(
     private val connectionLifecycleCallback = object : ConnectionLifecycleCallback() {
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             Log.d(TAG, "Connection initiated $endpointId")
-            // info.endpointName = the connecting peer's myToken (from requestConnection handshake,
-            // NOT from BLE advertisement). Filter matched/blocked before accepting.
-            val peerToken = info.endpointName.takeIf { it.isNotEmpty() && it != ANON_ENDPOINT_NAME }
+            // If the peer sent their token as the local endpoint name (older clients), use it
+            // for early rejection. New clients send a display name, so peerToken will be null.
+            val peerToken = info.endpointName.takeIf { it.matches(Regex("^[0-9a-f]{16}$")) }
             if (peerToken != null && (peerToken == myToken || peerToken in blockedTokens)) {
                 Log.d(TAG, "Rejecting $endpointId — self or blocked ($peerToken)")
-                runCatching { client.disconnectFromEndpoint(endpointId) }
+                runCatching { client.rejectConnection(endpointId) }
                 return
             }
-            client.acceptConnection(endpointId, payloadCallback)
+            runCatching { client.acceptConnection(endpointId, payloadCallback) }
+                .onFailure { Log.e(TAG, "acceptConnection failed for $endpointId", it) }
         }
 
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
@@ -401,8 +405,12 @@ class NearbyManager @Inject constructor(
 
         override fun onDisconnected(endpointId: String) {
             Log.d(TAG, "Disconnected $endpointId")
+            val token = _peers.value[endpointId]?.bleToken
             _peers.update { it - endpointId }
             _pendingEndpoints.update { it - endpointId }
+            // Clear sent-flag so the OLA is re-delivered if they reconnect
+            if (token != null) sentOlaTokensThisConn.remove(token)
+            Log.d(TAG, "Connection dropped for token=$token — pending OLA can be retried on reconnect")
         }
     }
 
@@ -420,7 +428,6 @@ class NearbyManager @Inject constructor(
                     MSG_OLA               -> handleOla(json)
                     MSG_MATCH_LOC         -> handleMatchLocation(json)
                     MSG_MATCH_CONFIRM     -> handleMatchConfirm(endpointId, json)
-                    MSG_BLOCK             -> handleBlock(json)
                     else                  -> Unit
                 }
             }.onFailure { Log.e(TAG, "Payload parse error from $endpointId", it) }
@@ -450,9 +457,8 @@ class NearbyManager @Inject constructor(
             return
         }
         if (token in blockedTokens) {
-            Log.d(TAG, "Blocked token connected: $token — rejecting")
-            sendBlockMessage(endpointId)
-            scope.launch { delay(500); runCatching { client.disconnectFromEndpoint(endpointId) } }
+            Log.d(TAG, "Blocked token connected: $token — silently rejecting")
+            runCatching { client.disconnectFromEndpoint(endpointId) }
             return
         }
         // Matched peers are allowed to reconnect — they show in nearby with Vibing status
@@ -495,7 +501,7 @@ class NearbyManager @Inject constructor(
 
     private fun handleOla(json: JSONObject) {
         val tok  = json.optString("tok").ifEmpty { return }
-        // Prefer the name embedded in the message; fall back to peer lookup for older clients
+        if (tok in blockedTokens) return
         val name = json.optString("n").ifEmpty {
             _peers.value.values.find { it.bleToken == tok }?.displayName ?: ""
         }
@@ -518,17 +524,6 @@ class NearbyManager @Inject constructor(
             delay(10_000)
             runCatching { client.disconnectFromEndpoint(endpointId) }
         }
-    }
-
-    private fun handleBlock(json: JSONObject) {
-        val fromToken = json.optString("tok").ifEmpty { return }
-        Log.d(TAG, "Received block signal from $fromToken")
-        blockReceivedFlow.tryEmit(fromToken)
-    }
-
-    private fun sendBlockMessage(endpointId: String) {
-        val msg = JSONObject().apply { put("t", MSG_BLOCK); put("tok", myToken) }
-        send(endpointId, msg.toString())
     }
 
     private fun handleMatchLocation(json: JSONObject) {
@@ -577,15 +572,21 @@ class NearbyManager @Inject constructor(
 
     private fun compressPhotoToBase64(file: File, maxPx: Int, quality: Int): String? = runCatching {
         val original = BitmapFactory.decodeFile(file.absolutePath) ?: return@runCatching null
-        val scale = maxPx.toFloat() / maxOf(original.width, original.height).coerceAtLeast(1)
-        val w = (original.width * scale).toInt().coerceAtLeast(1)
-        val h = (original.height * scale).toInt().coerceAtLeast(1)
-        val resized = Bitmap.createScaledBitmap(original, w, h, true)
-        val out = ByteArrayOutputStream()
-        resized.compress(Bitmap.CompressFormat.JPEG, quality, out)
-        if (resized !== original) resized.recycle()
-        original.recycle()
-        Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+        try {
+            val scale = maxPx.toFloat() / maxOf(original.width, original.height).coerceAtLeast(1)
+            val w = (original.width * scale).toInt().coerceAtLeast(1)
+            val h = (original.height * scale).toInt().coerceAtLeast(1)
+            val resized = Bitmap.createScaledBitmap(original, w, h, true)
+            try {
+                val out = ByteArrayOutputStream()
+                resized.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+            } finally {
+                if (resized !== original) resized.recycle()
+            }
+        } finally {
+            original.recycle()
+        }
     }.getOrNull()
 
     private fun savePhoto(token: String, base64: String, suffix: String = ""): String? = runCatching {
