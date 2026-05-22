@@ -392,7 +392,7 @@ private fun RadarEmptyState(discoveryEnabled: Boolean) {
             )
             Text(
                 if (discoveryEnabled)
-                    "Scanning for people within ~10 m. Both devices need Bluetooth and Wi-Fi on."
+                    "Scanning for people nearby. Both devices need Bluetooth and Wi-Fi on."
                 else
                     "Turn on discovery to see people around you.",
                 style = MaterialTheme.typography.bodySmall,

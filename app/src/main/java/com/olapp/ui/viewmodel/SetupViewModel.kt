@@ -1,6 +1,8 @@
 package com.olapp.ui.viewmodel
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.inject.Inject
 
@@ -145,9 +148,43 @@ class SetupViewModel @Inject constructor(
     private suspend fun copyPhotoToInternalStorage(uri: Uri): String = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "photos").apply { mkdirs() }
         val file = File(dir, "profile.jpg")
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            file.outputStream().use { output -> input.copyTo(output) }
+
+        val original = context.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it)
+        } ?: run {
+            // Fallback: raw copy if decode fails
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            }
+            return@withContext file.absolutePath
         }
+
+        // Scale down to max 800px on longest side to preserve good resolution
+        val maxPx = 800
+        val scale = maxPx.toFloat() / maxOf(original.width, original.height).coerceAtLeast(1)
+        val bitmap = if (scale < 1f) {
+            Bitmap.createScaledBitmap(
+                original,
+                (original.width * scale).toInt().coerceAtLeast(1),
+                (original.height * scale).toInt().coerceAtLeast(1),
+                true
+            ).also { if (it !== original) original.recycle() }
+        } else {
+            original
+        }
+
+        // Iteratively reduce quality until under 50 KB
+        val maxBytes = 50 * 1024
+        val out = ByteArrayOutputStream()
+        var quality = 85
+        do {
+            out.reset()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
+            quality -= 10
+        } while (out.size() > maxBytes && quality > 10)
+        bitmap.recycle()
+
+        file.outputStream().use { it.write(out.toByteArray()) }
         file.absolutePath
     }
 

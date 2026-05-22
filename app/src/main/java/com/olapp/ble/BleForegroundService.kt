@@ -318,6 +318,7 @@ class BleForegroundService : Service() {
             .setContentText("You both waved — open Wave & Vibe to connect")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setTimeoutAfter(60_000L)
             .setContentIntent(mainActivityIntent(notifId))
             .build()
         getSystemService(NotificationManager::class.java).notify(notifId, notif)
@@ -334,6 +335,7 @@ class BleForegroundService : Service() {
             .setContentText("Open Wave & Vibe to wave back")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setTimeoutAfter(30_000L)
             .setContentIntent(mainActivityIntent(notifId))
             .build()
         getSystemService(NotificationManager::class.java).notify(notifId, notif)
@@ -396,6 +398,7 @@ class BleForegroundService : Service() {
             .setContentText("You've vibed before — they're here with you")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setTimeoutAfter(30_000L)
             .setContentIntent(mainActivityIntent(notifId))
             .build()
         getSystemService(NotificationManager::class.java).notify(notifId, notif)
@@ -414,6 +417,7 @@ class BleForegroundService : Service() {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setOnlyAlertOnce(nearbyNotifShownThisSession)  // vibrate/sound only on first
+            .setTimeoutAfter(30_000L)
             .setContentIntent(mainActivityIntent(NOTIF_ID_NEARBY))
             .build()
         nearbyNotifShownThisSession = true

@@ -2,10 +2,14 @@ package com.olapp.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
+import android.bluetooth.le.AdvertisingSet
+import android.bluetooth.le.AdvertisingSetCallback
+import android.bluetooth.le.AdvertisingSetParameters
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
@@ -49,6 +53,8 @@ private const val NAME_MAX_BYTES = 13
 const val OLA_ADVERTISE_MS = 60_000L
 private const val DEVICE_TTL_MS = 60_000L
 private const val ADVERTISE_START_DELAY_MS = 200L
+private const val SCAN_RESTART_DELAY_MS = 3_000L
+private const val MAX_ADV_RETRIES = 3
 
 @Singleton
 class BleManager @Inject constructor(
@@ -58,6 +64,11 @@ class BleManager @Inject constructor(
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
     private val bleHandler = Handler(Looper.getMainLooper())
+
+    // Coded PHY (BT5) extends range from ~30m to ~300m. Falls back to legacy if unsupported.
+    private val supportsCodedPhy: Boolean by lazy {
+        adapter?.isLeCodedPhySupported == true && adapter?.isLeExtendedAdvertisingSupported == true
+    }
 
     private val _nearbyTokens = MutableStateFlow<Map<String, String>>(emptyMap())
     val nearbyTokens: StateFlow<Map<String, String>> = _nearbyTokens.asStateFlow()
@@ -72,19 +83,23 @@ class BleManager @Inject constructor(
 
     fun isTokenInRange(token: String): Boolean = _nearbyTokens.value.containsKey(token)
 
-    // Current active advertise callback — stopped before each new advertisement
-    private var activeAdvertiseCallback: AdvertiseCallback? = null
-    // Pending payload to advertise after the stop-then-start delay
+    // Legacy advertising state (used when Coded PHY is unavailable)
+    @Volatile private var activeLegacyCallback: AdvertiseCallback? = null
+    // Extended advertising state (Coded PHY / BT5)
+    @Volatile private var activeAdvSet: AdvertisingSet? = null
     @Volatile private var pendingPayload: ByteArray? = null
+    private var advRetryCount = 0
+
+    private var scanRunning = false
 
     // ------------------------------------------------------------------
-    // Advertising
+    // Advertising — public API
     // ------------------------------------------------------------------
 
     fun startPresenceAdvertising(token: String, displayName: String) {
         if (isOlaActive()) return
         scheduleAdvertise(buildPresencePayload(token, displayName))
-        Log.d(TAG, "PRESENCE advertising: token=$token name=$displayName")
+        Log.d(TAG, "PRESENCE advertising: coded=$supportsCodedPhy token=$token")
     }
 
     fun startOlaAdvertising(myTokenVal: String, targetToken: String) {
@@ -103,65 +118,77 @@ class BleManager @Inject constructor(
     fun stopAdvertising() {
         bleHandler.removeCallbacksAndMessages(null)
         pendingPayload = null
-        val adv = adapter?.bluetoothLeAdvertiser ?: return
-        activeAdvertiseCallback?.let {
-            try { adv.stopAdvertising(it) } catch (e: Exception) { /* ignore */ }
+        advRetryCount = 0
+        val adv = adapter?.bluetoothLeAdvertiser
+        activeLegacyCallback?.let { cb ->
+            try { adv?.stopAdvertising(cb) } catch (e: Exception) { /* ignore */ }
+            activeLegacyCallback = null
         }
-        activeAdvertiseCallback = null
+        activeAdvSet?.let {
+            try { adv?.stopAdvertisingSet(extAdvCallback) } catch (e: Exception) { /* ignore */ }
+            activeAdvSet = null
+        }
         Log.d(TAG, "Advertising stopped")
     }
 
-    /**
-     * Stops current advertisement, waits ADVERTISE_START_DELAY_MS, then starts the new one.
-     * Using a fresh AdvertiseCallback each time avoids ADVERTISE_FAILED_ALREADY_STARTED.
-     */
+    // ------------------------------------------------------------------
+    // Advertising — internal
+    // ------------------------------------------------------------------
+
     @SuppressLint("MissingPermission")
     private fun scheduleAdvertise(payload: ByteArray) {
         val adv = adapter?.bluetoothLeAdvertiser ?: run {
             Log.w(TAG, "BLE advertiser not available"); return
         }
         pendingPayload = payload
+        advRetryCount = 0
 
-        // Cancel any pending start, stop the current one
         bleHandler.removeCallbacksAndMessages(null)
-        activeAdvertiseCallback?.let {
-            try { adv.stopAdvertising(it) } catch (e: Exception) { /* ignore */ }
-        }
-        activeAdvertiseCallback = null
+        // Stop any active advertisement before starting a new one
+        activeLegacyCallback?.let { try { adv.stopAdvertising(it) } catch (e: Exception) { } }
+        activeLegacyCallback = null
+        activeAdvSet?.let { try { adv.stopAdvertisingSet(extAdvCallback) } catch (e: Exception) { } }
+        activeAdvSet = null
 
         bleHandler.postDelayed({
             val p = pendingPayload ?: return@postDelayed
-            val newCallback = makeAdvertiseCallback(p)
-            activeAdvertiseCallback = newCallback
-            val settings = AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                .setConnectable(false)
-                .setTimeout(0)
-                .build()
-            val data = AdvertiseData.Builder()
-                .addManufacturerData(MANUFACTURER_ID, p)
-                .setIncludeDeviceName(false)
-                .setIncludeTxPowerLevel(false)
-                .build()
-            try {
-                adv.startAdvertising(settings, data, newCallback)
-            } catch (e: SecurityException) {
-                Log.e(TAG, "startAdvertising: missing permission", e)
-            } catch (e: Exception) {
-                Log.e(TAG, "startAdvertising exception — retrying with BALANCED", e)
-                retryWithBalanced(adv, p)
+            val freshAdv = adapter?.bluetoothLeAdvertiser ?: run {
+                Log.w(TAG, "Advertiser gone by the time handler fired"); return@postDelayed
             }
+            if (supportsCodedPhy) startExtendedAdvertising(freshAdv, p)
+            else startLegacyAdvertising(freshAdv, p)
         }, ADVERTISE_START_DELAY_MS)
     }
 
     @SuppressLint("MissingPermission")
-    private fun retryWithBalanced(adv: android.bluetooth.le.BluetoothLeAdvertiser, payload: ByteArray) {
-        val retryCallback = makeAdvertiseCallback(payload)
-        activeAdvertiseCallback = retryCallback
+    private fun startExtendedAdvertising(adv: android.bluetooth.le.BluetoothLeAdvertiser, payload: ByteArray) {
+        val params = AdvertisingSetParameters.Builder()
+            .setLegacyMode(false)
+            .setConnectable(false)
+            .setPrimaryPhy(BluetoothDevice.PHY_LE_CODED)
+            .setSecondaryPhy(BluetoothDevice.PHY_LE_CODED)
+            .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_HIGH)
+            .build()
+        val data = AdvertiseData.Builder()
+            .addManufacturerData(MANUFACTURER_ID, payload)
+            .setIncludeDeviceName(false)
+            .setIncludeTxPowerLevel(false)
+            .build()
+        try {
+            adv.startAdvertisingSet(params, data, null, null, null, extAdvCallback)
+        } catch (e: Exception) {
+            Log.e(TAG, "startAdvertisingSet failed — falling back to legacy", e)
+            startLegacyAdvertising(adv, payload)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startLegacyAdvertising(adv: android.bluetooth.le.BluetoothLeAdvertiser, payload: ByteArray) {
+        val cb = makeLegacyCallback(payload)
+        activeLegacyCallback = cb
         val settings = AdvertiseSettings.Builder()
-            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
+            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
             .setConnectable(false)
             .setTimeout(0)
             .build()
@@ -171,15 +198,76 @@ class BleManager @Inject constructor(
             .setIncludeTxPowerLevel(false)
             .build()
         try {
-            adv.startAdvertising(settings, data, retryCallback)
+            adv.startAdvertising(settings, data, cb)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "startAdvertising: missing permission", e)
+            activeLegacyCallback = null
         } catch (e: Exception) {
-            Log.e(TAG, "Retry also failed", e)
+            Log.e(TAG, "startAdvertising exception — retrying BALANCED in 2s", e)
+            activeLegacyCallback = null
+            scheduleRetry(payload)
         }
     }
 
-    private fun makeAdvertiseCallback(payload: ByteArray) = object : AdvertiseCallback() {
+    @SuppressLint("MissingPermission")
+    private fun scheduleRetry(payload: ByteArray) {
+        if (advRetryCount >= MAX_ADV_RETRIES) {
+            Log.e(TAG, "Advertising giving up after $MAX_ADV_RETRIES retries")
+            advRetryCount = 0
+            return
+        }
+        advRetryCount++
+        bleHandler.postDelayed({
+            val adv = adapter?.bluetoothLeAdvertiser ?: return@postDelayed
+            Log.d(TAG, "Retry advertising attempt $advRetryCount")
+            val cb = makeLegacyCallback(payload)
+            activeLegacyCallback = cb
+            val settings = AdvertiseSettings.Builder()
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
+                .setConnectable(false)
+                .setTimeout(0)
+                .build()
+            val data = AdvertiseData.Builder()
+                .addManufacturerData(MANUFACTURER_ID, payload)
+                .setIncludeDeviceName(false)
+                .setIncludeTxPowerLevel(false)
+                .build()
+            try {
+                adv.startAdvertising(settings, data, cb)
+            } catch (e: Exception) {
+                Log.e(TAG, "Retry $advRetryCount failed", e)
+                activeLegacyCallback = null
+                scheduleRetry(payload)
+            }
+        }, 2_000L * advRetryCount)
+    }
+
+    private val extAdvCallback = object : AdvertisingSetCallback() {
+        override fun onAdvertisingSetStarted(set: AdvertisingSet?, txPower: Int, status: Int) {
+            if (status == ADVERTISE_SUCCESS) {
+                activeAdvSet = set
+                Log.d(TAG, "Extended (Coded PHY) advertising started, txPower=$txPower")
+            } else {
+                Log.e(TAG, "Extended advertising failed status=$status — falling back to legacy")
+                activeAdvSet = null
+                pendingPayload?.let { p ->
+                    bleHandler.post {
+                        val adv = adapter?.bluetoothLeAdvertiser ?: return@post
+                        startLegacyAdvertising(adv, p)
+                    }
+                }
+            }
+        }
+        override fun onAdvertisingSetStopped(set: AdvertisingSet?) {
+            if (activeAdvSet == set) activeAdvSet = null
+        }
+    }
+
+    private fun makeLegacyCallback(payload: ByteArray) = object : AdvertiseCallback() {
         override fun onStartSuccess(s: AdvertiseSettings) {
-            Log.d(TAG, "Advertising started OK (${payload.size} bytes)")
+            advRetryCount = 0
+            Log.d(TAG, "Legacy advertising started OK (${payload.size} bytes)")
         }
         override fun onStartFailure(errorCode: Int) {
             val reason = when (errorCode) {
@@ -190,11 +278,10 @@ class BleManager @Inject constructor(
                 ADVERTISE_FAILED_FEATURE_UNSUPPORTED  -> "FEATURE_UNSUPPORTED"
                 else                                  -> "UNKNOWN($errorCode)"
             }
-            Log.e(TAG, "Advertising FAILED: $reason")
-            // Retry once more after a longer delay for transient errors
-            if (errorCode == ADVERTISE_FAILED_INTERNAL_ERROR || errorCode == ADVERTISE_FAILED_ALREADY_STARTED) {
-                bleHandler.postDelayed({ scheduleAdvertise(payload) }, 2000)
-            }
+            Log.e(TAG, "Legacy advertising FAILED: $reason")
+            activeLegacyCallback = null
+            if (errorCode == ADVERTISE_FAILED_DATA_TOO_LARGE || errorCode == ADVERTISE_FAILED_FEATURE_UNSUPPORTED) return
+            scheduleRetry(payload)
         }
     }
 
@@ -207,14 +294,23 @@ class BleManager @Inject constructor(
         val sc = adapter?.bluetoothLeScanner ?: run {
             Log.w(TAG, "BLE scanner not available"); return
         }
-        // No filter — filter by manufacturer ID in callback for maximum OEM compatibility.
-        // Some Android OEM BLE stacks have bugs with manufacturer-data scan filters.
-        val settings = ScanSettings.Builder()
+        // Always stop first — prevents duplicate scan registrations that exhaust BLE scan slots
+        if (scanRunning) {
+            try { sc.stopScan(scanCallback) } catch (e: Exception) { }
+            scanRunning = false
+        }
+        val settingsBuilder = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-            .build()
+        // Enable extended advertising scan (picks up Coded PHY advertisements)
+        if (supportsCodedPhy) {
+            settingsBuilder.setLegacy(false)
+            settingsBuilder.setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)
+            Log.d(TAG, "Extended scanning enabled (Coded PHY)")
+        }
         try {
-            sc.startScan(emptyList(), settings, scanCallback)
+            sc.startScan(emptyList(), settingsBuilder.build(), scanCallback)
+            scanRunning = true
             Log.d(TAG, "Scanning started")
         } catch (e: SecurityException) {
             Log.e(TAG, "startScan: missing permission", e)
@@ -225,6 +321,7 @@ class BleManager @Inject constructor(
 
     @SuppressLint("MissingPermission")
     fun stopScanning() {
+        scanRunning = false
         try { adapter?.bluetoothLeScanner?.stopScan(scanCallback) } catch (e: Exception) { /* ignore */ }
     }
 
@@ -288,7 +385,10 @@ class BleManager @Inject constructor(
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Log.e(TAG, "Scan failed: $errorCode")
+            Log.e(TAG, "Scan failed: $errorCode — restarting in ${SCAN_RESTART_DELAY_MS}ms")
+            scanRunning = false
+            // Restart scan after a short delay — common on OEM stacks when BT state is recovering
+            bleHandler.postDelayed({ startScanning() }, SCAN_RESTART_DELAY_MS)
         }
     }
 
