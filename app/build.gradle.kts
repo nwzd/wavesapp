@@ -13,8 +13,8 @@ android {
         applicationId = "me.waveandvibe.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "5"
+        versionCode = 9
+        versionName = "6"
 
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
